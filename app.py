@@ -20,48 +20,51 @@ UTENTI_CORTE_EMILIA = [
     {"ordine": 6, "nome": "Novellini Eugenio", "ore": 2, "presa_dispari": 20, "presa_pari": 8}
 ]
 
-# 2. INIZIALIZZAZIONE DELLO STATO DELL'APP (Salva i dati temporanei in memoria)
+# 2. INIZIALIZZAZIONE DELLO STATO DELL'APP
 if 'ritardo_accumulato' not in st.session_state:
     st.session_state.ritardo_accumulato = 0  # espresso in minuti
 if 'turno_corrente' not in st.session_state:
     st.session_state.turno_corrente = 0
 
-# Titolo App
+# Titolo App (CORRETTO - Senza vecchi parametri errati)
 st.markdown("<h1 style='text-align: center; color: #1D3557;'>💧 Controllo Canalette</h1>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center; color: #457B9D;'>Canale: <b>Corte Emilia</b> - Ruota Dispari</p>", unsafe_style_allowed=True)
+st.markdown("<p style='text-align: center; color: #457B9D;'>Canale: <b>Corte Emilia</b> - Ruota Dispari</p>", unsafe_allow_html=True)
 st.write("---")
 
 # Data di partenza concordata
-data_partenza_base = datetime(2027, 5, 3, 20, 0, 0) # 03/05/2027 alle 20:00 (orario prima presa dispari)
+data_partenza_base = datetime(2027, 5, 3, 20, 0, 0) # 03/05/2027 alle 20:00
 
-# 3. CALCOLO DINAMICO DEI TURNI (A cascata con gestione del ritardo)
+# 3. CALCOLO DINAMICO DEI TURNI
 turni_calcolati = []
 orario_corrente = data_partenza_base
 
 for i, utente in enumerate(UTENTI_CORTE_EMILIA):
+    inizio_turno_base = orario_corrente
+    
     # Applica il ritardo accumulato solo dal turno in cui si è verificato in poi
-    inizio_turno = orario_corrente
+    inizio_turno_reale = inizio_turno_base
     if i >= st.session_state.turno_corrente:
-        inizio_turno += timedelta(minutes=st.session_state.ritardo_accumulato)
+        inizio_turno_reale += timedelta(minutes=st.session_state.ritardo_accumulato)
         
-    fine_turno = inizio_turno + timedelta(hours=utente["ore"])
+    fine_turno = inizio_turno_reale + timedelta(hours=utente["ore"])
     
     turni_calcolati.append({
         "ordine": utente["ordine"],
         "nome": utente["nome"],
-        "inizio": inizio_turno,
+        "inizio": inizio_turno_reale,
         "fine": fine_turno,
         "durata": utente["ore"]
     })
-    # Il prossimo turno parte esattamente quando finisce questo (senza considerare il ritardo extra futuro)
-    orario_corrente = fine_turno - timedelta(minutes=st.session_state.ritardo_accumulato) if i >= st.session_state.turno_corrente else fine_turno
+    
+    # Il prossimo turno parte esattamente quando finisce questo
+    orario_corrente = inizio_turno_base + timedelta(hours=utente["ore"])
 
 # 4. SCHERMATA CELLULARE ACQUAIOLO
 idx_attivo = st.session_state.turno_corrente
 if idx_attivo < len(turni_calcolati):
     attivo = turni_calcolati[idx_attivo]
     
-    # 🟢 Box Stato Attuale
+    # 🟢 Box Stato Attuale (CORRETTO)
     st.markdown(f"""
     <div style="background-color: #E6F3FF; padding: 20px; border-radius: 15px; border-left: 8px solid #457B9D; margin-bottom: 20px;">
         <span style="color: #457B9D; font-weight: bold; text-transform: uppercase; font-size: 12px;">🔴 TURNO ATTUALE IN CORSO</span>
@@ -71,9 +74,9 @@ if idx_attivo < len(turni_calcolati):
             Fine stimata: <b style="color: #E63946;">{attivo['fine'].strftime('%H:%M')} ({attivo['fine'].strftime('%d/%m')})</b>
         </p>
     </div>
-    """, unsafe_style_allowed=True)
+    """, unsafe_allow_html=True)
     
-    # ⏭️ Prossimo Turno in Coda
+    # ⏭️ Prossimo Turno in Coda (CORRETTO)
     if idx_attivo + 1 < len(turni_calcolati):
         prossimo = turni_calcolati[idx_attivo + 1]
         st.markdown(f"""
@@ -82,11 +85,11 @@ if idx_attivo < len(turni_calcolati):
             <h4 style="margin: 2px 0; color: #1D3557;">{prossimo['nome']}</h4>
             <p style="margin: 0; font-size: 13px; color: #1D3557;">Partenza prevista: <b>{prossimo['inizio'].strftime('%H:%M')} del {prossimo['inizio'].strftime('%d/%m')}</b></p>
         </div>
-        """, unsafe_style_allowed=True)
+        """, unsafe_allow_html=True)
     else:
         st.info("Questo è l'ultimo utente della canaletta.")
 
-    # 🛠️ PULSANTI PER GLI ACQUAIOLI (Interazione Real-time)
+    # 🛠️ PULSANTI PER GLI ACQUAIOLI
     st.write("### ⚙️ Azioni Rapide Acquaiolo")
     
     col1, col2 = st.columns(2)
@@ -99,7 +102,6 @@ if idx_attivo < len(turni_calcolati):
                 st.success("Tutti i turni di questa canaletta sono terminati!")
                 
     with col2:
-        # Bottone Reset per ricominciare il test da capo
         if st.button("🔄 Ripristina Test", use_container_width=True):
             st.session_state.turno_corrente = 0
             st.session_state.ritardo_accumulato = 0
