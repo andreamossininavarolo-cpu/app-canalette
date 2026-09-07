@@ -27,7 +27,7 @@ if 'turno_corrente' not in st.session_state:
     st.session_state.turno_corrente = 0
 
 # Titolo App
-st.markdown("<h1 style='text-align: center; color: #1D3557;'>💧 Controllo Canalette</h1>", unsafe_style_allowed=True)
+st.markdown("<h1 style='text-align: center; color: #1D3557;'>💧 Controllo Canalette</h1>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; color: #457B9D;'>Canale: <b>Corte Emilia</b> - Ruota Dispari</p>", unsafe_style_allowed=True)
 st.write("---")
 
