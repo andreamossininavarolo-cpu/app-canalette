@@ -63,10 +63,10 @@ def get_initial_data():
         "44. Bocchette Sec Casalmerlino": [("Alquati", 8), ("Fercodini Massimo", 4), ("Cozzani", 2)],
         "45. Bocchette sec. casalm.": [("Dalai", 15), ("Fercodini Romano", 15), ("Fazzi", 30), ("Bellini Fabio", 30)]
     }
-    
+
     data_canali = {}
     for canale, utenti in raw_data.items():
-        if not utenti: # Gestione canali momentaneamente vuoti
+        if not utenti: 
             data_canali[canale] = []
         else:
             data_canali[canale] = [
@@ -75,11 +75,11 @@ def get_initial_data():
             ]
     return data_canali
 
-# Inizializzazione Session State
-if 'data_canali' not in st.session_state:
+# Inizializzazione Session State FORZATA (Sovrascrive i dati se ne mancano)
+if 'data_canali' not in st.session_state or len(st.session_state.data_canali) < 40:
     st.session_state.data_canali = get_initial_data()
 
-if 'stato_canali' not in st.session_state:
+if 'stato_canali' not in st.session_state or len(st.session_state.stato_canali) < 40:
     st.session_state.stato_canali = {
         canale: {"turno_corrente": 0, "ritardo_minuti": 0, "data_partenza": datetime(2027, 5, 3, 20, 0, 0)}
         for canale in st.session_state.data_canali.keys()
