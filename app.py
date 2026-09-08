@@ -2,82 +2,96 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime, timedelta
 
-# Configurazione della pagina ottimizzata per smartphone
+# --- Configurazione Pagina ---
 st.set_page_config(
-    page_title="Gestione Canalette - Consorzio Navarolo",
+    page_title="Gestione Canalette",
     page_icon="💧",
-    layout="centered",
+    layout="wide",
     initial_sidebar_state="collapsed"
 )
 
-# ---------------------------------------------------------
-# 1. INIZIALIZZAZIONE DATI E STATO
-# ---------------------------------------------------------
-UTENTI_CORTE_EMILIA = [
-    {"ordine": 1, "nome": "Agosta Angelo", "ore": 12, "coltura": "Mais"},
-    {"ordine": 2, "nome": "Bettoni Maurizio", "ore": 6, "coltura": "Mais"},
-    {"ordine": 3, "nome": "Germiniasi Gabriele", "ore": 19, "coltura": "Erba Medica"},
-    {"ordine": 4, "nome": "Aporti Francesco", "ore": 6, "coltura": "Mais"},
-    {"ordine": 5, "nome": "Bettoni Franco", "ore": 5, "coltura": "Pomodoro"},
-    {"ordine": 6, "nome": "Novellini Eugenio", "ore": 2, "coltura": "Soia"}
-]
+# --- Database di Prova (In-Memory) ---
+def initialize_data():
+    """Inizializza i dati solo se non sono già presenti."""
+    if 'data_canali' not in st.session_state:
+        st.session_state.data_canali = {
+            "Corte Emilia": [
+                {"ordine": 1, "nome": "Agosta Angelo", "ore": 12, "coltura": "Mais", "note": ""},
+                {"ordine": 2, "nome": "Bettoni Maurizio", "ore": 6, "coltura": "Soia", "note": ""},
+                {"ordine": 3, "nome": "Germiniasi Gabriele", "ore": 19, "coltura": "Mais", "note": ""},
+                {"ordine": 4, "nome": "Aporti Francesco", "ore": 6, "coltura": "Erba Medica", "note": ""},
+                {"ordine": 5, "nome": "Bettoni Franco", "ore": 5, "coltura": "Pomodori", "note": ""},
+                {"ordine": 6, "nome": "Novellini Eugenio", "ore": 2, "coltura": "Ortaggi", "note": ""}
+            ],
+            "Pirolo Piena": [
+                {"ordine": 1, "nome": "Vighini Angelo", "ore": 5, "coltura": "Mais", "note": ""},
+                {"ordine": 2, "nome": "Marchini Erminio", "ore": 5, "coltura": "Soia", "note": ""}
+            ]
+        }
 
-# Salvataggio dello stato della sessione (ritardi, turni, censimento)
-if 'ritardo_accumulato' not in st.session_state:
-    st.session_state.ritardo_accumulato = 0
-if 'turno_corrente' not in st.session_state:
-    st.session_state.turno_corrente = 0
-if 'censimento' not in st.session_state:
-    st.session_state.censimento = {
-        u["nome"]: {"coltura": u["coltura"], "ore": u["ore"], "note": "", "stato": "⚪ Da Visitare"}
-        for u in UTENTI_CORTE_EMILIA
-    }
-
-# ---------------------------------------------------------
-# 2. INTESTAZIONE E SELETTORE MODALITÀ (SCHEDE / TABS)
-# ---------------------------------------------------------
-st.markdown("<h1 style='text-align: center; color: #1D3557;'>💧 Controllo Canalette</h1>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center; color: #457B9D;'>Canale: <b>Corte Emilia</b> - Consorzio Navarolo</p>", unsafe_allow_html=True)
-
-# Creazione delle due schede operative
-tab_estivo, tab_invernale = st.tabs(["💧 Gestione Turni (Estivo)", "🌾 Censimento Invernale"])
-
-# =========================================================
-# TAB 1: GESTIONE TURNI (OPERATIVITÀ ESTIVA)
-# =========================================================
-with tab_estivo:
-    data_partenza_base = datetime(2027, 5, 3, 20, 0, 0)  # Partenza: 03/05/2027 ore 20:00 (Ruota Dispari)
+    if 'stato_app' not in st.session_state:
+        st.session_state.stato_app = {
+            "canale_selezionato": "Corte Emilia",
+            "turno_corrente": 0,
+            "ritardo_accumulato": 0, # in minuti
+            "data_partenza_ruota": datetime(2027, 5, 3, 20, 0, 0)
+        }
     
+    if 'censimento' not in st.session_state:
+        st.session_state.censimento = {}
+
+
+initialize_data()
+
+# --- Titolo Principale ---
+st.markdown("<h1 style='text-align: center; color: #1D3557;'>💧 Gestione Integrata Canalette</h1>", unsafe_allow_html=True)
+
+# --- Selettore Canale Globale ---
+lista_canali = list(st.session_state.data_canali.keys())
+canale_selezionato = st.selectbox(
+    "Seleziona la Canaletta su cui operare:",
+    lista_canali,
+    index=lista_canali.index(st.session_state.stato_app.get("canale_selezionato", lista_canali[0]))
+)
+if st.session_state.stato_app["canale_selezionato"] != canale_selezionato:
+    st.session_state.stato_app["canale_selezionato"] = canale_selezionato
+    st.session_state.stato_app["turno_corrente"] = 0
+    st.session_state.stato_app["ritardo_accumulato"] = 0
+    st.rerun()
+
+utenti_del_canale = st.session_state.data_canali[canale_selezionato]
+
+# --- Definizione Schede (Tabs) ---
+tab_gestione, tab_censimento, tab_anagrafica = st.tabs([
+    "💧 Gestione Turni (Estivo)",
+    "🌾 Censimento Invernale",
+    "👥 Gestione Anagrafica"
+])
+
+
+# --- Scheda 1: Gestione Turni (Estivo) ---
+with tab_gestione:
+    st.header(f"Operatività Canale: {canale_selezionato}")
+
+    # Logica di calcolo turni
     turni_calcolati = []
-    orario_corrente = data_partenza_base
-
-    for i, utente in enumerate(UTENTI_CORTE_EMILIA):
-        # Utilizza le ore aggiornate dal censimento invernale se presenti
-        ore_competenza = st.session_state.censimento[utente["nome"]]["ore"]
-        
+    orario_corrente = st.session_state.stato_app["data_partenza_ruota"]
+    for i, utente in enumerate(utenti_del_canale):
         inizio_turno_base = orario_corrente
+        
         inizio_turno_reale = inizio_turno_base
-        
-        if i >= st.session_state.turno_corrente:
-            inizio_turno_reale += timedelta(minutes=st.session_state.ritardo_accumulato)
+        if i >= st.session_state.stato_app["turno_corrente"]:
+            inizio_turno_reale += timedelta(minutes=st.session_state.stato_app["ritardo_accumulato"])
             
-        fine_turno = inizio_turno_reale + timedelta(hours=ore_competenza)
-        
-        turni_calcolati.append({
-            "ordine": utente["ordine"],
-            "nome": utente["nome"],
-            "inizio": inizio_turno_reale,
-            "fine": fine_turno,
-            "durata": ore_competenza
-        })
-        
-        orario_corrente = inizio_turno_base + timedelta(hours=ore_competenza)
+        fine_turno = inizio_turno_reale + timedelta(hours=utente["ore"])
+        turni_calcolati.append({"ordine": utente["ordine"], "nome": utente["nome"], "inizio": inizio_turno_reale, "fine": fine_turno, "durata": utente["ore"]})
+        orario_corrente = inizio_turno_base + timedelta(hours=utente["ore"])
 
-    idx_attivo = st.session_state.turno_corrente
+    # UI per il turno corrente e successivo
+    idx_attivo = st.session_state.stato_app["turno_corrente"]
     if idx_attivo < len(turni_calcolati):
         attivo = turni_calcolati[idx_attivo]
         
-        # Box Turno Attuale
         st.markdown(f"""
         <div style="background-color: #E6F3FF; padding: 20px; border-radius: 15px; border-left: 8px solid #457B9D; margin-bottom: 20px;">
             <span style="color: #457B9D; font-weight: bold; text-transform: uppercase; font-size: 12px;">🔴 TURNO ATTUALE IN CORSO</span>
@@ -88,8 +102,7 @@ with tab_estivo:
             </p>
         </div>
         """, unsafe_allow_html=True)
-        
-        # Prossimo turno in coda
+
         if idx_attivo + 1 < len(turni_calcolati):
             prossimo = turni_calcolati[idx_attivo + 1]
             st.markdown(f"""
@@ -104,93 +117,95 @@ with tab_estivo:
 
         st.write("### ⚙️ Azioni Rapide Acquaiolo")
         col1, col2 = st.columns(2)
-        with col1:
-            if st.button("✅ Turno Fatto / Avanti", use_container_width=True):
-                if st.session_state.turno_corrente + 1 < len(UTENTI_CORTE_EMILIA):
-                    st.session_state.turno_corrente += 1
-                    st.rerun()
-                else:
-                    st.success("Tutti i turni di questa canaletta sono terminati!")
-        with col2:
-            if st.button("🔄 Ripristina Test", use_container_width=True):
-                st.session_state.turno_corrente = 0
-                st.session_state.ritardo_accumulato = 0
-                st.rerun()
+        if col1.button("✅ Turno Fatto / Avanti", use_container_width=True):
+            st.session_state.stato_app["turno_corrente"] += 1
+            st.rerun()
 
+        if col2.button("🔄 Ripristina Test", use_container_width=True):
+            st.session_state.stato_app["turno_corrente"] = 0
+            st.session_state.stato_app["ritardo_accumulato"] = 0
+            st.rerun()
+        
         st.write("---")
         st.write("⚠️ **C'è un ritardo in questo turno?**")
         col_r1, col_r2, col_r3 = st.columns(3)
-        with col_r1:
-            if st.button("+15 Min", use_container_width=True):
-                st.session_state.ritardo_accumulato += 15
-                st.rerun()
-        with col_r2:
-            if st.button("+30 Min", use_container_width=True):
-                st.session_state.ritardo_accumulato += 30
-                st.rerun()
-        with col_r3:
-            if st.button("+1 Ora", use_container_width=True):
-                st.session_state.ritardo_accumulato += 60
-                st.rerun()
+        if col_r1.button("+15 Min", use_container_width=True):
+            st.session_state.stato_app["ritardo_accumulato"] += 15
+            st.rerun()
+        if col_r2.button("+30 Min", use_container_width=True):
+            st.session_state.stato_app["ritardo_accumulato"] += 30
+            st.rerun()
+        if col_r3.button("+1 Ora", use_container_width=True):
+            st.session_state.stato_app["ritardo_accumulato"] += 60
+            st.rerun()
 
-        if st.session_state.ritardo_accumulato > 0:
-            st.warning(f"Ritardo applicato alla cascata: **{st.session_state.ritardo_accumulato} minuti**")
     else:
-        st.success("🎉 Ciclo di irrigazione completato con successo!")
+        st.success("🎉 Ciclo di irrigazione completato!")
         if st.button("🔄 Ricomincia Ciclo (Reset)"):
-            st.session_state.turno_corrente = 0
-            st.session_state.ritardo_accumulato = 0
+            st.session_state.stato_app["turno_corrente"] = 0
+            st.session_state.stato_app["ritardo_accumulato"] = 0
             st.rerun()
 
     st.write("---")
-    st.write("### 📅 Calendario Completo Canalina (Ufficio)")
+    st.write("### 📅 Calendario Completo Canalina (Vista Ufficio)")
     df_turni = pd.DataFrame(turni_calcolati)
     df_turni["Inizio"] = df_turni["inizio"].dt.strftime('%d/%m/%Y %H:%M')
     df_turni["Fine Stimata"] = df_turni["fine"].dt.strftime('%d/%m/%Y %H:%M')
     df_turni["Durata (Ore)"] = df_turni["durata"]
-    st.table(df_turni[["ordine", "nome", "Inizio", "Fine Stimata", "Durata (Ore)"]])
+    st.dataframe(df_turni[["ordine", "nome", "Inizio", "Fine Stimata", "Durata (Ore)"]], use_container_width=True)
 
+# --- Scheda 2: Censimento Invernale ---
+with tab_censimento:
+    st.header(f"Censimento Fabbisogno Idrico: {canale_selezionato}")
+    st.write("Seleziona un utente per confermare o modificare le ore e la coltura per la prossima stagione.")
 
-# =========================================================
-# TAB 2: CENSIMENTO INVERNALE (VISITE UTENTI)
-# =========================================================
-with tab_invernale:
-    st.write("### 🌾 Censimento Invernale Colture & Fabbisogno")
-    st.write("Compila le informazioni raccolte durante le visite invernali ai consorziati.")
-    
-    # Selezione Utente da intervistare
-    utente_sel = st.selectbox("Seleziona Consorziato da Intervistare:", list(st.session_state.censimento.keys()))
-    dati_attuali = st.session_state.censimento[utente_sel]
+    for i, utente in enumerate(utenti_del_canale):
+        with st.expander(f"{utente['ordine']}. {utente['nome']} - Ore Attuali: {utente['ore']}, Coltura: {utente['coltura']}"):
+            with st.form(key=f"form_censimento_{i}"):
+                nuove_ore_cens = st.number_input("Ore Richieste per la Stagione", min_value=0, max_value=200, value=utente['ore'])
+                nuova_coltura_cens = st.text_input("Coltura Prevista", value=utente['coltura'])
+                nuove_note_cens = st.text_area("Note dell'Acquaiolo (opzionale)", value=utente.get('note', ''))
+                
+                censimento_submitted = st.form_submit_button("✅ Salva Censimento per questo Utente")
+                if censimento_submitted:
+                    st.session_state.data_canali[canale_selezionato][i]['ore'] = nuove_ore_cens
+                    st.session_state.data_canali[canale_selezionato][i]['coltura'] = nuova_coltura_cens
+                    st.session_state.data_canali[canale_selezionato][i]['note'] = nuove_note_cens
+                    st.success(f"Censimento per {utente['nome']} salvato con successo!")
+                    st.rerun()
 
-    st.info(f"**Stato Visita:** {dati_attuali['stato']} | **Ore Anno Precedente:** {dati_attuali['ore']}h")
+# --- Scheda 3: Gestione Anagrafica Utenti ---
+with tab_anagrafica:
+    st.header(f"Gestione Utenti Canale: {canale_selezionato}")
 
-    with st.form("form_censimento"):
-        st.write(f"#### Rilevazione per: **{utente_sel}**")
-
-        # Selezione Coltura
-        colture_disponibili = ["Mais", "Pomodoro", "Erba Medica", "Soia", "Riso", "Ortaggi / Altro"]
-        idx_coltura = colture_disponibili.index(dati_attuali["coltura"]) if dati_attuali["coltura"] in colture_disponibili else 0
-        nuova_coltura = st.selectbox("Coltura Prevista per la Prossima Stagione:", colture_disponibili, index=idx_coltura)
-
-        # Inserimento Nuove Ore
-        nuove_ore = st.number_input("Ore di Competenza Richieste:", min_value=0, max_value=200, value=int(dati_attuali["ore"]))
-        
-        # Note dell'acquaiolo
-        note = st.text_area("Note dell'Utente o dell'Acquaiolo (opzionale):", value=dati_attuali["note"], placeholder="Es. Cambio parcella, cessione terreno...")
-
-        btn_salva = st.form_submit_button("💾 Salva e Conferma Censimento", use_container_width=True)
-
-    if btn_salva:
-        st.session_state.censimento[utente_sel] = {
-            "coltura": nuova_coltura,
-            "ore": nuove_ore,
-            "note": note,
-            "stato": "🟢 Completato"
-        }
-        st.success(f"Censimento per {utente_sel} salvato con successo!")
-        st.rerun()
+    with st.expander("➕ Aggiungi Nuovo Utente al Canale"):
+        with st.form("form_nuovo_utente", clear_on_submit=True):
+            nuovo_nome = st.text_input("Nome e Cognome")
+            nuove_ore_anagrafica = st.number_input("Ore di Competenza", min_value=1, max_value=200, value=10)
+            submitted = st.form_submit_button("💾 Salva Nuovo Utente")
+            if submitted and nuovo_nome:
+                nuovo_ordine = len(utenti_del_canale) + 1
+                st.session_state.data_canali[canale_selezionato].append({
+                    "ordine": nuovo_ordine, "nome": nuovo_nome, "ore": nuove_ore_anagrafica, "coltura": "Da Definire", "note": ""
+                })
+                st.success(f"Utente {nuovo_nome} aggiunto a {canale_selezionato}!")
+                st.rerun()
 
     st.write("---")
-    st.write("### 📊 Riepilogo Censimento Canaletta (Vista Ufficio)")
-    df_cens = pd.DataFrame.from_dict(st.session_state.censimento, orient='index')
-    st.dataframe(df_cens, use_container_width=True)
+    st.subheader("Elenco Utenti Esistenti")
+    
+    for i, utente in enumerate(utenti_del_canale):
+        col1, col2, col3 = st.columns([0.6, 0.2, 0.2])
+        with col1:
+            st.text(f"{utente['ordine']}. {utente['nome']} ({utente['ore']} ore)")
+        with col2:
+            if st.button("✏️ Modifica", key=f"edit_{i}", use_container_width=True):
+                st.info(f"La modifica dell'utente {utente['nome']} avverrà nella sezione 'Censimento Invernale'.")
+        with col3:
+            if st.button("❌ Rimuovi", key=f"del_{i}", use_container_width=True):
+                st.session_state.data_canali[canale_selezionato].pop(i)
+                # Riordina gli indici
+                for j, u in enumerate(st.session_state.data_canali[canale_selezionato]):
+                    u['ordine'] = j + 1
+                st.success(f"Utente {utente['nome']} rimosso!")
+                st.rerun()
