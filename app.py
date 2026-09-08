@@ -13,124 +13,69 @@ st.set_page_config(
 )
 
 # =========================================================
-# DATABASE INIZIALE CON TUTTI I CANALI CARICATI
+# DATABASE INIZIALE CON TUTTE E 45 LE CANALETTE E UTENTI
 # =========================================================
 def get_initial_data():
-    return {
-        "Corte Emilia": [
-            {"ordine": 1, "nome": "Agosta Angelo", "ore": 12, "coltura": "Mais", "note": ""},
-            {"ordine": 2, "nome": "Bettoni Maurizio", "ore": 6, "coltura": "Soia", "note": ""},
-            {"ordine": 3, "nome": "Germiniasi Gabriele", "ore": 19, "coltura": "Erba Medica", "note": ""},
-            {"ordine": 4, "nome": "Aporti Francesco", "ore": 6, "coltura": "Mais", "note": ""},
-            {"ordine": 5, "nome": "Bettoni Franco", "ore": 5, "coltura": "Pomodoro", "note": ""},
-            {"ordine": 6, "nome": "Novellini Eugenio", "ore": 2, "coltura": "Ortaggi", "note": ""}
-        ],
-        "Pirolo Piena": [
-            {"ordine": 1, "nome": "Vighini Angelo", "ore": 5, "coltura": "Mais", "note": ""},
-            {"ordine": 2, "nome": "Marchini Erminio", "ore": 5, "coltura": "Soia", "note": ""},
-            {"ordine": 3, "nome": "Morselli Davide", "ore": 8, "coltura": "Mais", "note": ""},
-            {"ordine": 4, "nome": "Sarzi Sartori Ermete", "ore": 5, "coltura": "Erba Medica", "note": ""},
-            {"ordine": 5, "nome": "Bettoni Franco", "ore": 13, "coltura": "Pomodoro", "note": ""},
-            {"ordine": 6, "nome": "Carpen Angiolino", "ore": 10, "coltura": "Mais", "note": ""},
-            {"ordine": 7, "nome": "Sarzi Alex", "ore": 2, "coltura": "Ortaggi", "note": ""},
-            {"ordine": 8, "nome": "Novellini Eugenio", "ore": 2, "coltura": "Mais", "note": ""}
-        ],
-        "Cà Lame": [
-            {"ordine": 1, "nome": "Aporti Andrea", "ore": 9, "coltura": "Mais", "note": ""},
-            {"ordine": 2, "nome": "Morselli Davide", "ore": 13, "coltura": "Soia", "note": ""},
-            {"ordine": 3, "nome": "Novellini Eugenio", "ore": 2, "coltura": "Ortaggi", "note": ""},
-            {"ordine": 4, "nome": "Maccagnola Cesare", "ore": 10, "coltura": "Erba Medica", "note": ""}
-        ],
-        "Madonna Lame -160": [
-            {"ordine": 1, "nome": "Bertoli Erminio", "ore": 25, "coltura": "Mais", "note": ""},
-            {"ordine": 2, "nome": "Morselli Davide", "ore": 27, "coltura": "Soia", "note": ""},
-            {"ordine": 3, "nome": "SCARICO (A e B)", "ore": 8, "coltura": "Scarico", "note": ""},
-            {"ordine": 4, "nome": "Morselli Paolo", "ore": 4, "coltura": "Mais", "note": ""},
-            {"ordine": 5, "nome": "Dalai Iacopo", "ore": 4, "coltura": "Erba Medica", "note": ""},
-            {"ordine": 6, "nome": "Maccagnola Cesare", "ore": 40, "coltura": "Mais", "note": ""},
-            {"ordine": 7, "nome": "Molinari/Maccagnola", "ore": 10, "coltura": "Pomodoro", "note": ""},
-            {"ordine": 8, "nome": "Scarico per pomodori", "ore": 18, "coltura": "Pomodoro", "note": ""},
-            {"ordine": 9, "nome": "Poli Remo", "ore": 8, "coltura": "Mais", "note": ""},
-            {"ordine": 10, "nome": "Marchini Gianluigi", "ore": 27, "coltura": "Soia", "note": ""},
-            {"ordine": 11, "nome": "Fercodini Bruno", "ore": 20, "coltura": "Erba Medica", "note": ""},
-            {"ordine": 12, "nome": "Teresa Volta", "ore": 4, "coltura": "Ortaggi", "note": ""},
-            {"ordine": 13, "nome": "SCARICO", "ore": 18, "coltura": "Scarico", "note": ""}
-        ],
-        "Cividale Nord A": [
-            {"ordine": 1, "nome": "Germiniasi Gabriele", "ore": 5, "coltura": "Mais", "note": ""},
-            {"ordine": 2, "nome": "Cracco Sante", "ore": 45, "coltura": "Mais", "note": ""},
-            {"ordine": 3, "nome": "Molinari Daniele", "ore": 28, "coltura": "Soia", "note": ""},
-            {"ordine": 4, "nome": "Manfredi Filippo", "ore": 15, "coltura": "Erba Medica", "note": ""},
-            {"ordine": 5, "nome": "Poli", "ore": 2, "coltura": "Ortaggi", "note": ""},
-            {"ordine": 6, "nome": "Dalai Iacopo", "ore": 4, "coltura": "Mais", "note": ""}
-        ],
-        "Belvedere Nord": [
-            {"ordine": 1, "nome": "Maccagnola", "ore": 5, "coltura": "Mais", "note": ""},
-            {"ordine": 2, "nome": "Marchini Gianluigi", "ore": 10, "coltura": "Soia", "note": ""},
-            {"ordine": 3, "nome": "Germiniasi Gabriele", "ore": 10, "coltura": "Mais", "note": ""},
-            {"ordine": 4, "nome": "Gandolfi F.lli", "ore": 3, "coltura": "Erba Medica", "note": ""},
-            {"ordine": 5, "nome": "Vicini Giancarlo", "ore": 6, "coltura": "Mais", "note": ""},
-            {"ordine": 6, "nome": "Zappaterra Attilio", "ore": 10, "coltura": "Pomodoro", "note": ""},
-            {"ordine": 7, "nome": "Sanguanini", "ore": 3, "coltura": "Ortaggi", "note": ""}
-        ],
-        "Cò De Vanni I°": [
-            {"ordine": 1, "nome": "Maccagnola Bruno", "ore": 50, "coltura": "Mais", "note": ""},
-            {"ordine": 2, "nome": "Scarico", "ore": 8, "coltura": "Scarico", "note": ""}
-        ],
-        "Cò De Vanni II°": [
-            {"ordine": 1, "nome": "Maiocchi", "ore": 15, "coltura": "Mais", "note": ""},
-            {"ordine": 2, "nome": "Scarico", "ore": 2, "coltura": "Scarico", "note": ""},
-            {"ordine": 3, "nome": "Bernardi Rosolino", "ore": 3, "coltura": "Soia", "note": ""},
-            {"ordine": 4, "nome": "Arrighi Ettore", "ore": 3, "coltura": "Mais", "note": ""},
-            {"ordine": 5, "nome": "Casella", "ore": 1, "coltura": "Ortaggi", "note": ""},
-            {"ordine": 6, "nome": "Scaglioni Antonio", "ore": 2, "coltura": "Erba Medica", "note": ""},
-            {"ordine": 7, "nome": "Gardani Massimo", "ore": 2, "coltura": "Mais", "note": ""},
-            {"ordine": 8, "nome": "Morelli Luigi", "ore": 5, "coltura": "Pomodoro", "note": ""},
-            {"ordine": 9, "nome": "Maiocchi Italo", "ore": 13, "coltura": "Soia", "note": ""},
-            {"ordine": 10, "nome": "Tolasi", "ore": 2, "coltura": "Mais", "note": ""},
-            {"ordine": 11, "nome": "Buttarelli Elia", "ore": 10, "coltura": "Erba Medica", "note": ""},
-            {"ordine": 12, "nome": "Novellini Nicolò", "ore": 18, "coltura": "Mais", "note": ""},
-            {"ordine": 13, "nome": "Arrighi Ettore 2", "ore": 7, "coltura": "Soia", "note": ""},
-            {"ordine": 14, "nome": "Scarico", "ore": 17, "coltura": "Scarico", "note": ""},
-            {"ordine": 15, "nome": "Caleffi Manuele", "ore": 50, "coltura": "Mais", "note": ""},
-            {"ordine": 16, "nome": "Arrighi Ettore 3", "ore": 15, "coltura": "Pomodoro", "note": ""},
-            {"ordine": 17, "nome": "SCARICO", "ore": 15, "coltura": "Scarico", "note": ""}
-        ],
-        "Spineda": [
-            {"ordine": 1, "nome": "Scarico", "ore": 2, "coltura": "Scarico", "note": ""},
-            {"ordine": 2, "nome": "Cirelli Luigi", "ore": 10, "coltura": "Mais", "note": ""},
-            {"ordine": 3, "nome": "Arrighi Ettore", "ore": 5, "coltura": "Soia", "note": ""},
-            {"ordine": 4, "nome": "Marchini", "ore": 8, "coltura": "Erba Medica", "note": ""},
-            {"ordine": 5, "nome": "SCARICO", "ore": 5, "coltura": "Scarico", "note": ""}
-        ],
-        "S. Pietro Piena": [
-            {"ordine": 1, "nome": "SCARICO", "ore": 3, "coltura": "Scarico", "note": ""},
-            {"ordine": 2, "nome": "Sanfelici Giuseppe", "ore": 44, "coltura": "Mais", "note": ""},
-            {"ordine": 3, "nome": "Pasetti", "ore": 8, "coltura": "Soia", "note": ""},
-            {"ordine": 4, "nome": "UTENTE", "ore": 3, "coltura": "Mais", "note": ""},
-            {"ordine": 5, "nome": "Balzanelli Arturo", "ore": 6, "coltura": "Erba Medica", "note": ""},
-            {"ordine": 6, "nome": "Neri Giovanni", "ore": 3, "coltura": "Ortaggi", "note": ""}
-        ],
-        "Fiescale": [
-            {"ordine": 1, "nome": "Caldarini Nazzareno", "ore": 30, "coltura": "Mais", "note": ""},
-            {"ordine": 2, "nome": "Calza Riccardo", "ore": 30, "coltura": "Soia", "note": ""},
-            {"ordine": 3, "nome": "Lodi Rizzini E.", "ore": 30, "coltura": "Erba Medica", "note": ""},
-            {"ordine": 4, "nome": "Mattioli", "ore": 30, "coltura": "Mais", "note": ""},
-            {"ordine": 5, "nome": "Martelli Enzo", "ore": 20, "coltura": "Pomodoro", "note": ""},
-            {"ordine": 6, "nome": "Noale Giacinto", "ore": 40, "coltura": "Mais", "note": ""},
-            {"ordine": 7, "nome": "Rondelli Franco", "ore": 40, "coltura": "Soia", "note": ""},
-            {"ordine": 8, "nome": "SCARICO", "ore": 20, "coltura": "Scarico", "note": ""},
-            {"ordine": 9, "nome": "Scarico", "ore": 30, "coltura": "Scarico", "note": ""},
-            {"ordine": 10, "nome": "Geremia Bruno", "ore": 40, "coltura": "Mais", "note": ""},
-            {"ordine": 11, "nome": "Rondelli Elio", "ore": 50, "coltura": "Mais", "note": ""}
-        ],
-        "Bocchette Sec Casalmerlino": [
-            {"ordine": 1, "nome": "Alquati", "ore": 8, "coltura": "Mais", "note": ""},
-            {"ordine": 2, "nome": "Fercodini Massimo", "ore": 4, "coltura": "Soia", "note": ""},
-            {"ordine": 3, "nome": "Cozzani", "ore": 2, "coltura": "Ortaggi", "note": ""}
-        ]
+    raw_data = {
+        "1. Corte Emilia": [("Agosta Angelo", 12), ("Bettoni Maurizio", 6), ("Germiniasi Gabriele", 19), ("Aporti Francesco", 6), ("Bettoni Franco", 5), ("Novellini Eugenio", 2)],
+        "2. Pirolo Piena": [("Vighini Angelo", 5), ("Marchini Erminio", 5), ("Morselli Davide", 8), ("Sarzi Sartori Ermete", 5), ("Bettoni Franco", 13), ("Carpen Angiolino", 10), ("Sarzi Alex", 2), ("Novellini Eugenio", 2)],
+        "3. Pirolo Ridotta 50 Lt": [],
+        "4. Cà Lame": [("Aporti Andrea", 9), ("Morselli Davide", 13), ("Novellini Eugenio", 2), ("Maccagnola Cesare", 10)],
+        "5. Madonna Lame -160": [("Bertoli Erminio", 25), ("Morselli Davide", 27), ("SCARICO (A e B)", 8), ("Morselli Paolo", 4), ("Dalai Iacopo", 4), ("Maccagnola Cesare", 40), ("Molinari/Maccagnola", 10), ("Zanafredi/Scario", 0), ("Scarico per pomodori", 18), ("Poli Remo", 8), ("Marchini Gianluigi", 27), ("Fercodini Bruno", 20), ("Teresa Volta", 4), ("SCARICO", 18)],
+        "6. Madonna Lame Rid": [("Marchini Gianluigi", 22), ("Gardinazzi Wolmer", 30), ("Pezzali", 20), ("Barbieri Alberto 2", 10), ("SCARICO", 12), ("Marchini Gianluigi", 25), ("Gardinazzi Wolmer", 20), ("SCARICO", 5), ("Fercodini Bruno", 33), ("Fercodini", 10), ("Zanafredi Andrea", 29)],
+        "7. Cividale Nord A": [("Germiniasi Gabriele", 5), ("Cracco Sante", 45), ("Molinari Daniele", 28), ("Manfredi Filippo", 15), ("Poli", 2), ("Dalai Iacopo", 4)],
+        "8. Belvedere Nord": [("Maccagnola", 5), ("Marchini Gianluigi", 10), ("Germiniasi Gabriele", 10), ("Gandolfi F.lli", 3), ("Vicini Giancarlo", 6), ("Zappaterra Attilio", 10), ("Sanguanini", 3)],
+        "9. Belvedere Nord Ridotta": [("Pasin Girolamo", 30), ("Pasetti Angelo", 40), ("F.lli Belletti", 40), ("Zappaterra", 40), ("Gandolfi Mauro", 115), ("Malinverni Davide", 15), ("Sanguanini", 4), ("Taraschi Luigi", 16), ("Belletti F.lli", 150)],
+        "10. Cividale Nord Vecchia Rid": [("Maccagnola Bruno", 50), ("Dalai Iacipo", 30)],
+        "11. Cividale Nord Vecchia": [("Cracco Sante", 6), ("Dalai Iacopo", 13), ("Marchini Gianluigi", 32), ("Maccagnola Bruno", 30)],
+        "12. Cividale Nord Vecchia Pvot": [("Maccagnola Bruno", 50)],
+        "13. Cò De Vanni I°": [("Maccagnola Bruno", 50), ("Scarico", 8)],
+        "14. Cò De Vanni II°": [("Maiocchi", 15), ("Scarico", 2), ("Bernardi Rosolino", 3), ("Arrighi Ettore", 3), ("Casella", 1), ("Scaglioni Antonio", 2), ("Gardani Massimo", 2), ("Morelli Luigi", 5), ("Maiocchi Italo", 13), ("Tolasi", 2), ("Buttarelli Elia", 10), ("Novellini Nicolò", 18), ("Arrighi Ettore 2", 7), ("Scarico", 17), ("Caleffi Manuele", 50), ("Arrighi Ettore 3", 15), ("SCARICO", 15)],
+        "15. Cò De Vanni II° Ridotta": [("Paccini Daniel", 20), ("F.lli Freddi", 15), ("Borroni F.lli", 6), ("Beduschi Guglielmina", 29), ("Arrighi Ettore", 35)],
+        "16. I° Gruppo Bocchette": [("Gandolfi Mauro", 80)],
+        "17. Spineda": [("Scarico", 2), ("Cirelli Luigi", 10), ("Arrighi Ettore", 5), ("Marchini", 8), ("SCARICO", 5)],
+        "18. Spineda Ridotta": [("Pagliari Stefano", 20), ("Maiocchi Italo", 15), ("Arrighi Ettore", 15), ("Belletti F.lli", 20), ("SCARICO", 10), ("Arrighi Ettore", 10), ("Freddi Bruno", 20), ("Ardenghi Luigi", 30), ("Arrighi Ettore", 20), ("Arrighi Ettore", 10), ("Maiocchi Italo", 10), ("Caleffi Silvio", 15), ("Gardani Guido", 15), ("Freddi Bruno", 15), ("SCARICO", 15)],
+        "19. Fornace Rid.": [("Gandolfi Mauro", 10)],
+        "20. S. Fiore I°": [("Novellini Nicolò", 10)],
+        "21. S. Fiore I° Rid": [("Sarzi Maurizio", 20), ("Borroni F.lli", 30), ("Maiocchi", 30), ("Pagliari Stefano", 20), ("Maiocchi Italo 2", 20), ("Borroni F.lli", 35), ("SCARICO", 10), ("Novellini Nicolò", 25), ("Pasini Girolamo", 40), ("Morelli Luigi", 20), ("Marchini Gianluigi", 70), ("SCARICO", 10), ("Maiocchi", 10), ("Freddi Bruno", 10), ("Caleffi Silvio", 20), ("Arrighi Ettore", 10), ("Martelli", 10), ("Marchini Giovanni", 20), ("Torchio Giovanni", 85)],
+        "22. S. FIORE II° LT. 160 piena": [("SCARICO", 20), ("Novellini Nicolò", 10)],
+        "23. S. Fiore II° Rid": [("Maiocchi", 80), ("Novellini Nicolò", 80), ("Ardenghi Umberto", 80)],
+        "24. Cà De Bottoli": [("Paganini Lodovico", 40), ("Paganini Lino", 10), ("Rossi (Eredi)", 10), ("SCARICO", 20), ("Grassi Marcello", 20), ("Monici F.lli", 20)],
+        "25. Secondario Pomara SEZ. LT. 50": [("Verdi Giuseppe", 75), ("Paganni Lodovico", 35), ("Pagliari Stefano", 40), ("Zappaterra Az.Agr.", 80), ("Novellini Nicolò", 70)],
+        "26. Pomara SEZ. LT. 50": [("Noale Giacinto", 35), ("Bislenghi Cesare", 20), ("Cerati", 10), ("SCARICO", 5)],
+        "27. Orti Rid": [("Torchio Mario", 10), ("Maffezzoli Giuliano", 70), ("Dall'Acqua Cesare", 10), ("Verdi Giuseppe", 20), ("Dall'Acqua Gianni", 10), ("Bresciani L.", 30), ("Madella Amadei Elena", 20), ("Adami", 10), ("Pagliari Stefano", 40), ("Borroni F.lli", 20), ("Gobbi Frattini L.", 20), ("SCARICO", 10)],
+        "28. S. Pietro Piena": [("SCARICO", 3), ("Sanfelici Giuseppe", 44), ("Pasetti", 8), ("UTENTE", 3), ("Balzanelli Arturo", 6), ("Neri Giovanni", 3)],
+        "29. S. Pietro Ridotta": [("Vallari (Eredi)", 15), ("Balzanelli Elena", 15), ("Sanfelici Giuseppe", 50), ("Bislenghi Cesare", 10), ("Ferrari Renato", 10), ("Balzanelli Arturo", 10), ("Gobbi Frattini L.", 10), ("Ferrari Mauro", 15), ("Noale Giacinto", 15), ("Paganini", 15), ("Geremia", 15), ("Verdi Giuseppe", 20), ("Morselli Giacomo", 10), ("Borroni", 60)],
+        "30. Ossola": [("Galesi Ettore", 50)],
+        "31. Ossola. II°": [("Agosta Ciro", 20), ("Galesi Ettore", 20), ("Geremia Bruno", 25), ("Pasetti F.lli", 15)],
+        "32. Agraria Rid": [("Monici Giorgio", 20), ("Paglia Giuseppe", 20), ("Cerati Roberto", 10), ("Grassi Marcello", 10), ("Paglia Gianfranco", 20), ("Sarzi A. Selvino", 10), ("Pedrazzoli Ottorino", 25), ("Bislenghi Cesare", 5), ("Pagliari Stefano", 20), ("Scarico", 30), ("Rossi Edo", 10)],
+        "33. Manzoglio": [("Galesi", 30), ("Zardi", 15), ("Scarico", 35), ("Cerati", 40), ("Monici Pierino", 40), ("Galesi Ettore", 80)],
+        "34. Fiescale": [("Caldarini Nazzareno", 30), ("Calza Riccardo", 30), ("Lodi Rizzini E.", 30), ("Mattioli", 30), ("Martelli Enzo", 20), ("Noale Giacinto", 40), ("Rondelli Franco", 40), ("SCARICO", 20), ("Scarico", 30), ("Geremia Bruno", 40), ("Rondelli Elio", 50)],
+        "35. Tessagli Rid": [("Noale Giacinto", 50), ("Calza Riccardo", 40), ("Galesi", 20), ("Rondelli Franco", 20), ("Lodi Rizzini E.", 50), ("Caldarini", 20), ("Rondelli Elio", 50), ("Tenca Giovanni", 20)],
+        "36. Roncole": [("SCARICO", 30), ("Galesi", 30), ("Noale Giacinto", 30), ("Padova Francesco", 20), ("SCARICO", 30), ("Rubini Angelo", 30), ("Maccagnola Bruno", 50), ("Maffezzoli Giuliano", 30), ("Monici Pierino", 20), ("Cerati Mario", 60)],
+        "37. Vaja Rid": [("SCARICO", 40), ("Mattioli", 40), ("Rondelli Elio", 40), ("SCARICO", 40), ("Maffezzoli Giuliano", 30), ("Novellini Flavio", 50)],
+        "38. Riglio -121": [("Paganini Lino", 25), ("Monici Giorgio", 30), ("Cerati Mario", 50), ("Martelli Luigi", 35), ("Pagliari Stefano", 25), ("Pagliari Stefano", 25), ("Rubini Angelo", 40), ("Asinari Matteo", 20), ("Paglia", 30), ("Galesi", 50), ("Paglia Giuseppe", 50), ("SCARICO", 10), ("Silocchi Mauro", 30)],
+        "39. Breda 3° -91": [("Morselli Davide", 12), ("Dalai Iacopo", 3), ("Poli", 22)],
+        "40. Breda 4° -92": [("Maccagnola", 8), ("Germiniasi Gabriele", 5), ("SCARICO", 6)],
+        "41. Delmoncello I°": [("Aporti Andrea", 20), ("Arrighi Ettore", 20), ("Marchini Agr.", 30), ("Bonassi Mauro 1", 20), ("Cracco Sante", 20), ("Bonassi Mauro 2", 20), ("Fercodini Romano", 10), ("Fercodini Massimo", 20), ("Aporti Andrea", 20), ("Mantovani Giulio", 10), ("Maccagnola Bruno", 20)],
+        "42. Delmoncello II°": [("Fercodini Massimo", 3), ("Marchini Gianluigi", 2), ("Morselli Davide", 2), ("Bertoli Erminio", 3)],
+        "43. Casamerlino Rid": [("Maccagnola Bruno", 20)],
+        "44. Bocchette Sec Casalmerlino": [("Alquati", 8), ("Fercodini Massimo", 4), ("Cozzani", 2)],
+        "45. Bocchette sec. casalm.": [("Dalai", 15), ("Fercodini Romano", 15), ("Fazzi", 30), ("Bellini Fabio", 30)]
     }
+    
+    data_canali = {}
+    for canale, utenti in raw_data.items():
+        if not utenti: # Gestione canali momentaneamente vuoti
+            data_canali[canale] = []
+        else:
+            data_canali[canale] = [
+                {"ordine": i+1, "nome": nome, "ore": ore, "coltura": "Da Definire", "note": ""}
+                for i, (nome, ore) in enumerate(utenti)
+            ]
+    return data_canali
 
+# Inizializzazione Session State
 if 'data_canali' not in st.session_state:
     st.session_state.data_canali = get_initial_data()
 
@@ -152,18 +97,11 @@ col_sel1, col_sel2 = st.columns([3, 1])
 with col_sel1:
     canale_selezionato = st.selectbox("Seleziona la Canaletta su cui operare:", lista_canali)
 
-if canale_selezionato not in st.session_state.stato_canali:
-    st.session_state.stato_canali[canale_selezionato] = {
-        "turno_corrente": 0,
-        "ritardo_minuti": 0,
-        "data_partenza": datetime(2027, 5, 3, 20, 0, 0)
-    }
-
 stato_canale = st.session_state.stato_canali[canale_selezionato]
 utenti_canale = st.session_state.data_canali[canale_selezionato]
 
 with col_sel2:
-    st.metric("Utenti Registrati", f"{len(utenti_canale)} / 100 max")
+    st.metric("Utenti Registrati in questa Canaletta", f"{len(utenti_canale)} / 100 max")
 
 st.write("---")
 
@@ -308,7 +246,7 @@ with tab_censimento:
                             min_value=0, max_value=200, value=int(u["ore"])
                         )
                     with c_col2:
-                        colture_opzioni = ["Mais", "Pomodoro", "Erba Medica", "Soia", "Riso", "Ortaggi", "Altro", "Scarico"]
+                        colture_opzioni = ["Mais", "Pomodoro", "Erba Medica", "Soia", "Riso", "Ortaggi", "Da Definire", "Altro", "Scarico"]
                         idx_c = colture_opzioni.index(u["coltura"]) if u["coltura"] in colture_opzioni else 0
                         nuova_coltura = st.selectbox("Coltura Prevista:", colture_opzioni, index=idx_c)
 
