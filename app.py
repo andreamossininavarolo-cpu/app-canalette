@@ -168,4 +168,130 @@ with tab_turni:
     col_ieri, col_oggi, col_domani = st.columns(3)
     with col_ieri:
         if st.button("⬅️ IERI", use_container_width=True):
-            st.session_state.data_selezionata -= timedelt
+            st.session_state.data_selezionata -= timedelta(days=1)
+            st.rerun()
+    with col_oggi:
+        if st.button("📅 OGGI", use_container_width=True):
+            st.session_state.data_selezionata = datetime.now().date()
+            st.rerun()
+    with col_domani:
+        if st.button("DOMANI ➡️", use_container_width=True):
+            st.session_state.data_selezionata += timedelta(days=1)
+            st.rerun()
+
+    # Visualizzazione Turno Attivo
+    idx = stato_canale["turno_corrente"]
+    if len(turni_calcolati) > 0 and idx < len(turni_calcolati):
+        t_attivo = turni_calcolati[idx]
+        
+        ora_in = formatta_data_it(t_attivo['inizio'])
+        ora_fi = formatta_data_it(t_attivo['fine'])
+        
+        pallino_verde = '<span style="display:inline-block; width:15px; height:15px; background-color:#00FF00; border-radius:50%; border:2px solid #005000; margin-right:8px; vertical-align:middle; box-shadow: 0px 0px 4px #00FF00;"></span>'
+        pallino_rosso = '<span style="display:inline-block; width:15px; height:15px; background-color:#FF0000; border-radius:50%; border:2px solid #500000; margin-right:8px; vertical-align:middle; box-shadow: 0px 0px 4px #FF0000;"></span>'
+
+        st.markdown(f"""
+        <div style="background-color: #E6F3FF; padding: 18px; border-radius: 12px; border-left: 8px solid #1D3557; margin-bottom: 15px;">
+            <span style="color: #457B9D; font-weight: bold; font-size: 12px; text-transform: uppercase;">🔴 TURNO ATTUALE IN CORSO</span>
+            <h2 style="margin: 4px 0; color: #1D3557;">{t_attivo['nome']}</h2>
+            <p style="margin: 5px 0; font-size: 15px; color: #1D3557; display: flex; align-items: center;">
+                {pallino_verde} <span style="vertical-align: middle;">Inizio presa: {ora_in}</span>
+            </p>
+            <p style="margin: 5px 0; font-size: 15px; color: #E63946; display: flex; align-items: center;">
+                {pallino_rosso} <span style="vertical-align: middle;">Fine stimata: {ora_fi} ({t_attivo['durata']} ore)</span>
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+
+        if idx + 1 < len(turni_calcolati):
+            t_succ = turni_calcolati[idx + 1]
+            st.markdown(f"""
+            <div style="background-color: #F1FAEE; padding: 12px; border-radius: 10px; border-left: 5px solid #2A9D8F; margin-bottom: 20px;">
+                <span style="color: #2A9D8F; font-weight: bold; font-size: 11px;">⏭️ PROSSIMO IN CODA:</span>
+                <h4 style="margin: 2px 0; color: #1D3557;">{t_succ['nome']} ({t_succ['durata']} ore)</h4>
+                <p style="margin: 0; font-size: 13px; color: #1D3557;">Inizio previsto: <b>{formatta_data_it(t_succ['inizio'])}</b></p>
+            </div>
+            """, unsafe_allow_html=True)
+        else:
+            st.info("Questo è l'ultimo consorziato della sequenza.")
+
+        st.write("#### ⚙️ Azioni Rapide Acquaiolo")
+        btn_c1, btn_c2 = st.columns(2)
+        with btn_c1:
+            if st.button("✅ Turno Concluso / Passa al Successivo", use_container_width=True):
+                if stato_canale["turno_corrente"] + 1 < len(utenti_canale):
+                    stato_canale["turno_corrente"] += 1
+                    st.rerun()
+                else:
+                    st.success("Tutti i turni della canaletta sono completati!")
+        with btn_c2:
+            if st.button("🔄 Ripristina Primo Turno", use_container_width=True):
+                stato_canale["turno_corrente"] = 0
+                stato_canale["ritardo_minuti"] = 0
+                st.rerun()
+
+        st.write("---")
+        st.write("⚠️ **Segnalazione Ritardo sul Campo** (ricalcola all'istante i turni successivi):")
+        r_c1, r_c2, r_c3, r_c4 = st.columns(4)
+        with r_c1:
+            if st.button("+15 Minuti", use_container_width=True):
+                stato_canale["ritardo_minuti"] += 15
+                st.rerun()
+        with r_c2:
+            if st.button("+30 Minuti", use_container_width=True):
+                stato_canale["ritardo_minuti"] += 30
+                st.rerun()
+        with r_c3:
+            if st.button("+1 Ora", use_container_width=True):
+                stato_canale["ritardo_minuti"] += 60
+                st.rerun()
+        with r_c4:
+            if st.button("Azzera Ritardi", use_container_width=True):
+                stato_canale["ritardo_minuti"] = 0
+                st.rerun()
+
+        if stato_canale["ritardo_minuti"] > 0:
+            st.warning(f"⚠️ Ritardo cumulativo attivo su questo canale: **{stato_canale['ritardo_minuti']} minuti**.")
+    else:
+        st.info("Nessun utente inserito in questa canaletta. Aggiungine uno nella scheda 'Gestione Anagrafica'.")
+
+    if len(turni_calcolati) > 0:
+        st.write("---")
+        st.write("### 📅 Tabella Orari Completa (Vista Ufficio)")
+        df_t = pd.DataFrame(turni_calcolati)
+        df_t["Inizio Previsto"] = df_t["inizio"].dt.strftime('%d/%m/%Y %H:%M')
+        df_t["Fine Prevista"] = df_t["fine"].dt.strftime('%d/%m/%Y %H:%M')
+        df_t["Ore"] = df_t["durata"]
+        st.dataframe(df_t[["ordine", "nome", "Inizio Previsto", "Fine Prevista", "Ore"]], use_container_width=True)
+
+# ---------------------------------------------------------
+# TAB 2: CENSIMENTO INVERNALE (COLTURE & ORE)
+# ---------------------------------------------------------
+with tab_censimento:
+    st.subheader(f"🌾 Censimento Fabbisogno Invernale: {canale_selezionato}")
+    st.write("Compila le ore richieste e la coltura durante le visite invernali ai consorziati.")
+
+    if len(utenti_canale) == 0:
+        st.info("Nessun utente da censire in questo canale.")
+    else:
+        for idx_u, u in enumerate(utenti_canale):
+            with st.expander(f"{u['ordine']}. {u['nome']} - Attuali: {u['ore']} ore ({u['coltura']})"):
+                with st.form(f"form_censimento_{canale_selezionato}_{idx_u}"):
+                    c_col1, c_col2 = st.columns(2)
+                    with c_col1:
+                        nuove_ore = st.number_input(
+                            "Ore Richieste per la Nuova Stagione:",
+                            min_value=0, max_value=200, value=int(u["ore"])
+                        )
+                    with c_col2:
+                        colture_opzioni = ["Mais", "Pomodoro", "Erba Medica", "Soia", "Riso", "Ortaggi", "Da Definire", "Altro", "Scarico"]
+                        idx_c = colture_opzioni.index(u["coltura"]) if u["coltura"] in colture_opzioni else 0
+                        nuova_coltura = st.selectbox("Coltura Prevista:", colture_opzioni, index=idx_c)
+                    
+                    nuove_note = st.text_area("Note / Modifiche Terreno (opzionale):", value=u.get("note", ""))
+                    
+                    if st.form_submit_button("💾 Salva Dati Censimento", use_container_width=True):
+                        st.session_state.data_canali[canale_selezionato][idx_u]["ore"] = nuove_ore
+                        st.session_state.data_canali[canale_selezionato][idx_u]["coltura"] = nuova_coltura
+                        st.session_state.data_canali[canale_selezionato][idx_u]["note"] = nuove_note
+             
