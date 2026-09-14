@@ -3,7 +3,7 @@ import pandas as pd
 from datetime import datetime, timedelta
 
 # =========================================================
-# CONFIGURAZIONE DELLA PAGINA
+# CONFIGURAZIONE DELLA PAGINA E STILE MOBILE
 # =========================================================
 st.set_page_config(
     page_title="Gestione Canalette - Consorzio Navarolo",
@@ -11,6 +11,41 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="collapsed"
 )
+
+st.markdown("""
+<style>
+    /* Rende il titolo molto più compatto per lo schermo del cellulare */
+    h1 {
+        font-size: 1.8em !important;
+        margin-bottom: 0px !important;
+        padding-bottom: 0px !important;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# =========================================================
+# DIZIONARI E FORMATTAZIONE DATA IN ITALIANO
+# =========================================================
+GIORNI_IT = {
+    "Monday": "lunedì", "Tuesday": "martedì", "Wednesday": "mercoledì", 
+    "Thursday": "giovedì", "Friday": "venerdì", "Saturday": "sabato", "Sunday": "domenica"
+}
+
+MESI_IT = {
+    "January": "gennaio", "February": "febbraio", "March": "marzo", "April": "aprile",
+    "May": "maggio", "June": "giugno", "July": "luglio", "August": "agosto",
+    "September": "settembre", "October": "ottobre", "November": "novembre", "December": "dicembre"
+}
+
+def formatta_data_it(dt):
+    """Formatta la data in italiano con il mese in grassetto HTML."""
+    giorno_sett = GIORNI_IT.get(dt.strftime('%A'), dt.strftime('%A'))
+    giorno_num = dt.strftime('%d')
+    mese = MESI_IT.get(dt.strftime('%B'), dt.strftime('%B'))
+    anno = dt.strftime('%y')
+    ora = dt.strftime('%H:%M')
+    return f"{giorno_sett} {giorno_num} <b>{mese}</b> '{anno} alle ore <b>{ora}</b>"
+
 
 # =========================================================
 # DATABASE INIZIALE CON TUTTE E 45 LE CANALETTE E UTENTI
@@ -75,7 +110,7 @@ def get_initial_data():
             ]
     return data_canali
 
-# Inizializzazione Session State FORZATA (Sovrascrive i dati se ne mancano)
+# Inizializzazione Session State FORZATA
 if 'data_canali' not in st.session_state or len(st.session_state.data_canali) < 40:
     st.session_state.data_canali = get_initial_data()
 
@@ -101,7 +136,7 @@ stato_canale = st.session_state.stato_canali[canale_selezionato]
 utenti_canale = st.session_state.data_canali[canale_selezionato]
 
 with col_sel2:
-    st.metric("Utenti Registrati in questa Canaletta", f"{len(utenti_canale)} / 100 max")
+    st.metric("Utenti in questa Canaletta", f"{len(utenti_canale)} / 100")
 
 st.write("---")
 
@@ -127,13 +162,11 @@ with tab_turni:
     for i, u in enumerate(utenti_canale):
         inizio_nominale = orario_progressivo
         inizio_effettivo = inizio_nominale
-
         # Applica ritardo solo dal turno attivo in avanti
         if i >= stato_canale["turno_corrente"]:
             inizio_effettivo += timedelta(minutes=stato_canale["ritardo_minuti"])
-
         fine_effettiva = inizio_effettivo + timedelta(hours=u["ore"])
-
+        
         turni_calcolati.append({
             "ordine": u["ordine"],
             "nome": u["nome"],
@@ -141,22 +174,28 @@ with tab_turni:
             "fine": fine_effettiva,
             "durata": u["ore"]
         })
-
         orario_progressivo = inizio_nominale + timedelta(hours=u["ore"])
 
     # Visualizzazione Turno Attivo
     idx = stato_canale["turno_corrente"]
-
     if len(turni_calcolati) > 0 and idx < len(turni_calcolati):
         t_attivo = turni_calcolati[idx]
+        
+        # --- APPLICATA FORMATTAZIONE E PALLINI FLUORESCENTI ---
+        ora_in = formatta_data_it(t_attivo['inizio'])
+        ora_fi = formatta_data_it(t_attivo['fine'])
+        pallino_verde = '<span style="display:inline-block; width:15px; height:15px; background-color:#00FF00; border-radius:50%; border:2px solid #005000; margin-right:8px; vertical-align:middle; box-shadow: 0px 0px 4px #00FF00;"></span>'
+        pallino_rosso = '<span style="display:inline-block; width:15px; height:15px; background-color:#FF0000; border-radius:50%; border:2px solid #500000; margin-right:8px; vertical-align:middle; box-shadow: 0px 0px 4px #FF0000;"></span>'
 
         st.markdown(f"""
         <div style="background-color: #E6F3FF; padding: 18px; border-radius: 12px; border-left: 8px solid #1D3557; margin-bottom: 15px;">
             <span style="color: #457B9D; font-weight: bold; font-size: 12px; text-transform: uppercase;">🔴 TURNO ATTUALE IN CORSO</span>
             <h2 style="margin: 4px 0; color: #1D3557;">{t_attivo['nome']}</h2>
-            <p style="margin: 0; font-size: 15px; color: #1D3557;">
-                Inizio presa: <b>{t_attivo['inizio'].strftime('%d/%m/%Y alle %H:%M')}</b> &nbsp;|&nbsp; 
-                Fine stimata: <b style="color: #E63946;">{t_attivo['fine'].strftime('%d/%m/%Y alle %H:%M')}</b> ({t_attivo['durata']} ore)
+            <p style="margin: 5px 0; font-size: 15px; color: #1D3557; display: flex; align-items: center;">
+                {pallino_verde} <span style="vertical-align: middle;">Inizio presa: {ora_in}</span>
+            </p>
+            <p style="margin: 5px 0; font-size: 15px; color: #E63946; display: flex; align-items: center;">
+                {pallino_rosso} <span style="vertical-align: middle;">Fine stimata: {ora_fi} ({t_attivo['durata']} ore)</span>
             </p>
         </div>
         """, unsafe_allow_html=True)
@@ -167,7 +206,7 @@ with tab_turni:
             <div style="background-color: #F1FAEE; padding: 12px; border-radius: 10px; border-left: 5px solid #2A9D8F; margin-bottom: 20px;">
                 <span style="color: #2A9D8F; font-weight: bold; font-size: 11px;">⏭️ PROSSIMO IN CODA:</span>
                 <h4 style="margin: 2px 0; color: #1D3557;">{t_succ['nome']} ({t_succ['durata']} ore)</h4>
-                <p style="margin: 0; font-size: 13px; color: #1D3557;">Inizio previsto: <b>{t_succ['inizio'].strftime('%d/%m/%Y ore %H:%M')}</b></p>
+                <p style="margin: 0; font-size: 13px; color: #1D3557;">Inizio previsto: <b>{formatta_data_it(t_succ['inizio'])}</b></p>
             </div>
             """, unsafe_allow_html=True)
         else:
@@ -183,7 +222,6 @@ with tab_turni:
                     st.rerun()
                 else:
                     st.success("Tutti i turni della canaletta sono completati!")
-
         with btn_c2:
             if st.button("🔄 Ripristina Primo Turno", use_container_width=True):
                 stato_canale["turno_corrente"] = 0
@@ -242,16 +280,16 @@ with tab_censimento:
                     c_col1, c_col2 = st.columns(2)
                     with c_col1:
                         nuove_ore = st.number_input(
-                            f"Ore Richieste per la Nuova Stagione:",
+                            "Ore Richieste per la Nuova Stagione:",
                             min_value=0, max_value=200, value=int(u["ore"])
                         )
                     with c_col2:
                         colture_opzioni = ["Mais", "Pomodoro", "Erba Medica", "Soia", "Riso", "Ortaggi", "Da Definire", "Altro", "Scarico"]
                         idx_c = colture_opzioni.index(u["coltura"]) if u["coltura"] in colture_opzioni else 0
                         nuova_coltura = st.selectbox("Coltura Prevista:", colture_opzioni, index=idx_c)
-
+                    
                     nuove_note = st.text_area("Note / Modifiche Terreno (opzionale):", value=u.get("note", ""))
-
+                    
                     if st.form_submit_button("💾 Salva Dati Censimento", use_container_width=True):
                         st.session_state.data_canali[canale_selezionato][idx_u]["ore"] = nuove_ore
                         st.session_state.data_canali[canale_selezionato][idx_u]["coltura"] = nuova_coltura
@@ -306,7 +344,7 @@ with tab_anagrafica:
         with col_mod:
             # Modifica rapida ore
             nuove_ore_veloci = st.number_input(
-                f"Mod. Ore", min_value=1, max_value=200, value=int(u["ore"]),
+                "Mod. Ore", min_value=1, max_value=200, value=int(u["ore"]),
                 key=f"qore_{canale_selezionato}_{idx_u}", label_visibility="collapsed"
             )
             if nuove_ore_veloci != u["ore"]:
@@ -318,6 +356,8 @@ with tab_anagrafica:
                 # Riordina la sequenza progressiva
                 for j, user in enumerate(st.session_state.data_canali[canale_selezionato]):
                     user["ordine"] = j + 1
+                
                 if stato_canale["turno_corrente"] >= len(st.session_state.data_canali[canale_selezionato]):
                     stato_canale["turno_corrente"] = max(0, len(st.session_state.data_canali[canale_selezionato]) - 1)
+                
                 st.rerun()
