@@ -3,7 +3,7 @@ import pandas as pd
 from datetime import datetime, timedelta
 
 # =========================================================
-# CONFIGURAZIONE DELLA PAGINA E STILE MOBILE
+# CONFIGURAZIONE DELLA PAGINA E STILE
 # =========================================================
 st.set_page_config(
     page_title="Gestione Canalette - Consorzio Navarolo",
@@ -14,38 +14,32 @@ st.set_page_config(
 
 st.markdown("""
 <style>
-    /* Rende il titolo molto più compatto per lo schermo del cellulare */
     h1 {
         font-size: 1.8em !important;
         margin-bottom: 0px !important;
         padding-bottom: 0px !important;
     }
+    [data-testid="column"] {
+        width: calc(33.333% - 6px) !important;
+        flex: 1 1 calc(33.333% - 6px) !important;
+        min-width: calc(33% - 6px) !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
 # =========================================================
-# DIZIONARI E FORMATTAZIONE DATA IN ITALIANO
+# FUNZIONI PER DATE IN ITALIANO
 # =========================================================
-GIORNI_IT = {
-    "Monday": "lunedì", "Tuesday": "martedì", "Wednesday": "mercoledì", 
-    "Thursday": "giovedì", "Friday": "venerdì", "Saturday": "sabato", "Sunday": "domenica"
-}
-
-MESI_IT = {
-    "January": "gennaio", "February": "febbraio", "March": "marzo", "April": "aprile",
-    "May": "maggio", "June": "giugno", "July": "luglio", "August": "agosto",
-    "September": "settembre", "October": "ottobre", "November": "novembre", "December": "dicembre"
-}
+GIORNI_IT = {"Monday": "lunedì", "Tuesday": "martedì", "Wednesday": "mercoledì", "Thursday": "giovedì", "Friday": "venerdì", "Saturday": "sabato", "Sunday": "domenica"}
+MESI_IT = {"January": "gennaio", "February": "febbraio", "March": "marzo", "April": "aprile", "May": "maggio", "June": "giugno", "July": "luglio", "August": "agosto", "September": "settembre", "October": "ottobre", "November": "novembre", "December": "dicembre"}
 
 def formatta_data_it(dt):
-    """Formatta la data in italiano con il mese in grassetto HTML."""
-    giorno_sett = GIORNI_IT.get(dt.strftime('%A'), dt.strftime('%A'))
-    giorno_num = dt.strftime('%d')
+    g_sett = GIORNI_IT.get(dt.strftime('%A'), dt.strftime('%A'))
+    g_num = dt.strftime('%d')
     mese = MESI_IT.get(dt.strftime('%B'), dt.strftime('%B'))
     anno = dt.strftime('%y')
     ora = dt.strftime('%H:%M')
-    return f"{giorno_sett} {giorno_num} <b>{mese}</b> '{anno} alle ore <b>{ora}</b>"
-
+    return f"{g_sett} {g_num} <b>{mese}</b> '{anno} alle ore <b>{ora}</b>"
 
 # =========================================================
 # DATABASE INIZIALE CON TUTTE E 45 LE CANALETTE E UTENTI
@@ -98,19 +92,15 @@ def get_initial_data():
         "44. Bocchette Sec Casalmerlino": [("Alquati", 8), ("Fercodini Massimo", 4), ("Cozzani", 2)],
         "45. Bocchette sec. casalm.": [("Dalai", 15), ("Fercodini Romano", 15), ("Fazzi", 30), ("Bellini Fabio", 30)]
     }
-
     data_canali = {}
     for canale, utenti in raw_data.items():
         if not utenti: 
             data_canali[canale] = []
         else:
-            data_canali[canale] = [
-                {"ordine": i+1, "nome": nome, "ore": ore, "coltura": "Da Definire", "note": ""}
-                for i, (nome, ore) in enumerate(utenti)
-            ]
+            data_canali[canale] = [{"ordine": i+1, "nome": nome, "ore": ore, "coltura": "Da Definire", "note": ""} for i, (nome, ore) in enumerate(utenti)]
     return data_canali
 
-# Inizializzazione Session State FORZATA
+# Inizializzazione Session State
 if 'data_canali' not in st.session_state or len(st.session_state.data_canali) < 40:
     st.session_state.data_canali = get_initial_data()
 
@@ -119,6 +109,9 @@ if 'stato_canali' not in st.session_state or len(st.session_state.stato_canali) 
         canale: {"turno_corrente": 0, "ritardo_minuti": 0, "data_partenza": datetime(2027, 5, 3, 20, 0, 0)}
         for canale in st.session_state.data_canali.keys()
     }
+
+if 'data_selezionata' not in st.session_state:
+    st.session_state.data_selezionata = datetime.now().date()
 
 # =========================================================
 # HEADER E SELETTORE CANALE
@@ -136,7 +129,7 @@ stato_canale = st.session_state.stato_canali[canale_selezionato]
 utenti_canale = st.session_state.data_canali[canale_selezionato]
 
 with col_sel2:
-    st.metric("Utenti in questa Canaletta", f"{len(utenti_canale)} / 100")
+    st.metric("Utenti Registrati", f"{len(utenti_canale)} / 100 max")
 
 st.write("---")
 
@@ -162,202 +155,17 @@ with tab_turni:
     for i, u in enumerate(utenti_canale):
         inizio_nominale = orario_progressivo
         inizio_effettivo = inizio_nominale
-        # Applica ritardo solo dal turno attivo in avanti
         if i >= stato_canale["turno_corrente"]:
             inizio_effettivo += timedelta(minutes=stato_canale["ritardo_minuti"])
         fine_effettiva = inizio_effettivo + timedelta(hours=u["ore"])
-        
         turni_calcolati.append({
-            "ordine": u["ordine"],
-            "nome": u["nome"],
-            "inizio": inizio_effettivo,
-            "fine": fine_effettiva,
-            "durata": u["ore"]
+            "ordine": u["ordine"], "nome": u["nome"], "inizio": inizio_effettivo,
+            "fine": fine_effettiva, "durata": u["ore"]
         })
         orario_progressivo = inizio_nominale + timedelta(hours=u["ore"])
 
-    # Visualizzazione Turno Attivo
-    idx = stato_canale["turno_corrente"]
-    if len(turni_calcolati) > 0 and idx < len(turni_calcolati):
-        t_attivo = turni_calcolati[idx]
-        
-        # --- APPLICATA FORMATTAZIONE E PALLINI FLUORESCENTI ---
-        ora_in = formatta_data_it(t_attivo['inizio'])
-        ora_fi = formatta_data_it(t_attivo['fine'])
-        pallino_verde = '<span style="display:inline-block; width:15px; height:15px; background-color:#00FF00; border-radius:50%; border:2px solid #005000; margin-right:8px; vertical-align:middle; box-shadow: 0px 0px 4px #00FF00;"></span>'
-        pallino_rosso = '<span style="display:inline-block; width:15px; height:15px; background-color:#FF0000; border-radius:50%; border:2px solid #500000; margin-right:8px; vertical-align:middle; box-shadow: 0px 0px 4px #FF0000;"></span>'
-
-        st.markdown(f"""
-        <div style="background-color: #E6F3FF; padding: 18px; border-radius: 12px; border-left: 8px solid #1D3557; margin-bottom: 15px;">
-            <span style="color: #457B9D; font-weight: bold; font-size: 12px; text-transform: uppercase;">🔴 TURNO ATTUALE IN CORSO</span>
-            <h2 style="margin: 4px 0; color: #1D3557;">{t_attivo['nome']}</h2>
-            <p style="margin: 5px 0; font-size: 15px; color: #1D3557; display: flex; align-items: center;">
-                {pallino_verde} <span style="vertical-align: middle;">Inizio presa: {ora_in}</span>
-            </p>
-            <p style="margin: 5px 0; font-size: 15px; color: #E63946; display: flex; align-items: center;">
-                {pallino_rosso} <span style="vertical-align: middle;">Fine stimata: {ora_fi} ({t_attivo['durata']} ore)</span>
-            </p>
-        </div>
-        """, unsafe_allow_html=True)
-
-        if idx + 1 < len(turni_calcolati):
-            t_succ = turni_calcolati[idx + 1]
-            st.markdown(f"""
-            <div style="background-color: #F1FAEE; padding: 12px; border-radius: 10px; border-left: 5px solid #2A9D8F; margin-bottom: 20px;">
-                <span style="color: #2A9D8F; font-weight: bold; font-size: 11px;">⏭️ PROSSIMO IN CODA:</span>
-                <h4 style="margin: 2px 0; color: #1D3557;">{t_succ['nome']} ({t_succ['durata']} ore)</h4>
-                <p style="margin: 0; font-size: 13px; color: #1D3557;">Inizio previsto: <b>{formatta_data_it(t_succ['inizio'])}</b></p>
-            </div>
-            """, unsafe_allow_html=True)
-        else:
-            st.info("Questo è l'ultimo consorziato della sequenza.")
-
-        # Pulsanti Azione Acquaiolo
-        st.write("#### ⚙️ Azioni Rapide Acquaiolo")
-        btn_c1, btn_c2 = st.columns(2)
-        with btn_c1:
-            if st.button("✅ Turno Concluso / Passa al Successivo", use_container_width=True):
-                if stato_canale["turno_corrente"] + 1 < len(utenti_canale):
-                    stato_canale["turno_corrente"] += 1
-                    st.rerun()
-                else:
-                    st.success("Tutti i turni della canaletta sono completati!")
-        with btn_c2:
-            if st.button("🔄 Ripristina Primo Turno", use_container_width=True):
-                stato_canale["turno_corrente"] = 0
-                stato_canale["ritardo_minuti"] = 0
-                st.rerun()
-
-        # Gestione Ritardi
-        st.write("---")
-        st.write("⚠️ **Segnalazione Ritardo sul Campo** (ricalcola all'istante i turni successivi):")
-        r_c1, r_c2, r_c3, r_c4 = st.columns(4)
-        with r_c1:
-            if st.button("+15 Minuti", use_container_width=True):
-                stato_canale["ritardo_minuti"] += 15
-                st.rerun()
-        with r_c2:
-            if st.button("+30 Minuti", use_container_width=True):
-                stato_canale["ritardo_minuti"] += 30
-                st.rerun()
-        with r_c3:
-            if st.button("+1 Ora", use_container_width=True):
-                stato_canale["ritardo_minuti"] += 60
-                st.rerun()
-        with r_c4:
-            if st.button("Azzera Ritardi", use_container_width=True):
-                stato_canale["ritardo_minuti"] = 0
-                st.rerun()
-
-        if stato_canale["ritardo_minuti"] > 0:
-            st.warning(f"⚠️ Ritardo cumulativo attivo su questo canale: **{stato_canale['ritardo_minuti']} minuti**.")
-    else:
-        st.info("Nessun utente inserito in questa canaletta. Aggiungine uno nella scheda 'Gestione Anagrafica'.")
-
-    # Tabella completa di riepilogo
-    if len(turni_calcolati) > 0:
-        st.write("---")
-        st.write("### 📅 Tabella Orari Completa (Vista Ufficio)")
-        df_t = pd.DataFrame(turni_calcolati)
-        df_t["Inizio Previsto"] = df_t["inizio"].dt.strftime('%d/%m/%Y %H:%M')
-        df_t["Fine Prevista"] = df_t["fine"].dt.strftime('%d/%m/%Y %H:%M')
-        df_t["Ore"] = df_t["durata"]
-        st.dataframe(df_t[["ordine", "nome", "Inizio Previsto", "Fine Prevista", "Ore"]], use_container_width=True)
-
-# ---------------------------------------------------------
-# TAB 2: CENSIMENTO INVERNALE (COLTURE & ORE)
-# ---------------------------------------------------------
-with tab_censimento:
-    st.subheader(f"🌾 Censimento Fabbisogno Invernale: {canale_selezionato}")
-    st.write("Compila le ore richieste e la coltura durante le visite invernali ai consorziati.")
-
-    if len(utenti_canale) == 0:
-        st.info("Nessun utente da censire in questo canale.")
-    else:
-        for idx_u, u in enumerate(utenti_canale):
-            with st.expander(f"{u['ordine']}. {u['nome']} - Attuali: {u['ore']} ore ({u['coltura']})"):
-                with st.form(f"form_censimento_{canale_selezionato}_{idx_u}"):
-                    c_col1, c_col2 = st.columns(2)
-                    with c_col1:
-                        nuove_ore = st.number_input(
-                            "Ore Richieste per la Nuova Stagione:",
-                            min_value=0, max_value=200, value=int(u["ore"])
-                        )
-                    with c_col2:
-                        colture_opzioni = ["Mais", "Pomodoro", "Erba Medica", "Soia", "Riso", "Ortaggi", "Da Definire", "Altro", "Scarico"]
-                        idx_c = colture_opzioni.index(u["coltura"]) if u["coltura"] in colture_opzioni else 0
-                        nuova_coltura = st.selectbox("Coltura Prevista:", colture_opzioni, index=idx_c)
-                    
-                    nuove_note = st.text_area("Note / Modifiche Terreno (opzionale):", value=u.get("note", ""))
-                    
-                    if st.form_submit_button("💾 Salva Dati Censimento", use_container_width=True):
-                        st.session_state.data_canali[canale_selezionato][idx_u]["ore"] = nuove_ore
-                        st.session_state.data_canali[canale_selezionato][idx_u]["coltura"] = nuova_coltura
-                        st.session_state.data_canali[canale_selezionato][idx_u]["note"] = nuove_note
-                        st.success(f"Dati aggiornati per {u['nome']}!")
-                        st.rerun()
-
-        st.write("---")
-        st.write("### 📊 Riepilogo Censimento Invernale")
-        df_cens = pd.DataFrame(utenti_canale)
-        st.dataframe(df_cens[["ordine", "nome", "ore", "coltura", "note"]], use_container_width=True)
-
-# ---------------------------------------------------------
-# TAB 3: GESTIONE ANAGRAFICA (AGGIUNGI, MODIFICA, RIMUOVI)
-# ---------------------------------------------------------
-with tab_anagrafica:
-    st.subheader(f"👥 Gestione Consorziati: {canale_selezionato}")
-
-    # Modulo Aggiunta Nuovo Utente
-    with st.expander("➕ Inserisci Nuovo Utente (Massimo 100 per Canale)"):
-        if len(utenti_canale) >= 100:
-            st.error("Hai raggiunto il limite massimo di 100 utenti per questo canale.")
-        else:
-            with st.form("form_nuovo_nominativo", clear_on_submit=True):
-                in_nome = st.text_input("Cognome e Nome / Ditta:")
-                in_ore = st.number_input("Ore di Competenza:", min_value=1, max_value=200, value=10)
-                in_coltura = st.selectbox("Coltura Iniziale:", ["Mais", "Pomodoro", "Erba Medica", "Soia", "Ortaggi", "Altro", "Scarico"])
-                in_note = st.text_input("Note (es. Mappale, Frazione):", "")
-
-                if st.form_submit_button("💾 Salva e Aggiungi in Coda", use_container_width=True):
-                    if in_nome.strip():
-                        nuovo_ordine = len(utenti_canale) + 1
-                        st.session_state.data_canali[canale_selezionato].append({
-                            "ordine": nuovo_ordine,
-                            "nome": in_nome.strip(),
-                            "ore": in_ore,
-                            "coltura": in_coltura,
-                            "note": in_note.strip()
-                        })
-                        st.success(f"Utente '{in_nome.strip()}' inserito con successo con ordine #{nuovo_ordine}!")
-                        st.rerun()
-                    else:
-                        st.warning("Inserisci il nome del consorziato.")
-
-    st.write("---")
-    st.write(f"#### Elenco Nominativi Esistenti ({len(utenti_canale)} su 100 max)")
-
-    for idx_u, u in enumerate(utenti_canale):
-        col_info, col_mod, col_del = st.columns([0.6, 0.25, 0.15])
-        with col_info:
-            st.write(f"**#{u['ordine']} - {u['nome']}** | {u['ore']}h | {u['coltura']}")
-        with col_mod:
-            # Modifica rapida ore
-            nuove_ore_veloci = st.number_input(
-                "Mod. Ore", min_value=1, max_value=200, value=int(u["ore"]),
-                key=f"qore_{canale_selezionato}_{idx_u}", label_visibility="collapsed"
-            )
-            if nuove_ore_veloci != u["ore"]:
-                st.session_state.data_canali[canale_selezionato][idx_u]["ore"] = nuove_ore_veloci
-                st.rerun()
-        with col_del:
-            if st.button("🗑️", key=f"del_{canale_selezionato}_{idx_u}", help="Elimina utente"):
-                st.session_state.data_canali[canale_selezionato].pop(idx_u)
-                # Riordina la sequenza progressiva
-                for j, user in enumerate(st.session_state.data_canali[canale_selezionato]):
-                    user["ordine"] = j + 1
-                
-                if stato_canale["turno_corrente"] >= len(st.session_state.data_canali[canale_selezionato]):
-                    stato_canale["turno_corrente"] = max(0, len(st.session_state.data_canali[canale_selezionato]) - 1)
-                
-                st.rerun()
+    # Pulsanti di Navigazione Rapida
+    col_ieri, col_oggi, col_domani = st.columns(3)
+    with col_ieri:
+        if st.button("⬅️ IERI", use_container_width=True):
+            st.session_state.data_selezionata -= timedelt
