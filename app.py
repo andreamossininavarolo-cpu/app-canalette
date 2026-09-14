@@ -2,34 +2,23 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime, timedelta
 
-# =========================================================
-# CONFIGURAZIONE DELLA PAGINA E STILE
-# =========================================================
-st.set_page_config(
-    page_title="Gestione Canalette - Consorzio Navarolo",
-    page_icon="💧",
-    layout="wide",
-    initial_sidebar_state="collapsed"
-)
+# --- Configurazione Pagina e Stile Compatto Mobile ---
+st.set_page_config(page_title="Turni Navarolo", layout="centered")
 
 st.markdown("""
 <style>
-    h1 {
-        font-size: 1.8em !important;
-        margin-bottom: 0px !important;
-        padding-bottom: 0px !important;
-    }
+    h1 { font-size: 1.8em !important; margin: 0 !important; padding: 0 !important; }
     [data-testid="column"] {
-        width: calc(33.333% - 6px) !important;
-        flex: 1 1 calc(33.333% - 6px) !important;
-        min-width: calc(33% - 6px) !important;
+        width: calc(33.333% - 8px) !important;
+        flex: 1 1 calc(33.333% - 8px) !important;
+        min-width: calc(33% - 8px) !important;
     }
+    [data-testid="stVerticalBlock"] { gap: 0.5rem !important; }
 </style>
 """, unsafe_allow_html=True)
 
-# =========================================================
-# FUNZIONI PER DATE IN ITALIANO
-# =========================================================
+st.title("🌊 Turni Irrigui Storti")
+
 GIORNI_IT = {"Monday": "lunedì", "Tuesday": "martedì", "Wednesday": "mercoledì", "Thursday": "giovedì", "Friday": "venerdì", "Saturday": "sabato", "Sunday": "domenica"}
 MESI_IT = {"January": "gennaio", "February": "febbraio", "March": "marzo", "April": "aprile", "May": "maggio", "June": "giugno", "July": "luglio", "August": "agosto", "September": "settembre", "October": "ottobre", "November": "novembre", "December": "dicembre"}
 
@@ -41,130 +30,111 @@ def formatta_data_it(dt):
     ora = dt.strftime('%H:%M')
     return f"{g_sett} {g_num} <b>{mese}</b> '{anno} alle ore <b>{ora}</b>"
 
-# =========================================================
-# DATABASE INIZIALE CON TUTTE E 45 LE CANALETTE E UTENTI
-# =========================================================
 def get_initial_data():
-    raw_data = {
-        "1. Corte Emilia": [("Agosta Angelo", 12), ("Bettoni Maurizio", 6), ("Germiniasi Gabriele", 19), ("Aporti Francesco", 6), ("Bettoni Franco", 5), ("Novellini Eugenio", 2)],
-        "2. Pirolo Piena": [("Vighini Angelo", 5), ("Marchini Erminio", 5), ("Morselli Davide", 8), ("Sarzi Sartori Ermete", 5), ("Bettoni Franco", 13), ("Carpen Angiolino", 10), ("Sarzi Alex", 2), ("Novellini Eugenio", 2)],
-        "3. Pirolo Ridotta 50 Lt": [],
-        "4. Cà Lame": [("Aporti Andrea", 9), ("Morselli Davide", 13), ("Novellini Eugenio", 2), ("Maccagnola Cesare", 10)],
-        "5. Madonna Lame -160": [("Bertoli Erminio", 25), ("Morselli Davide", 27), ("SCARICO (A e B)", 8), ("Morselli Paolo", 4), ("Dalai Iacopo", 4), ("Maccagnola Cesare", 40), ("Molinari/Maccagnola", 10), ("Zanafredi/Scario", 0), ("Scarico per pomodori", 18), ("Poli Remo", 8), ("Marchini Gianluigi", 27), ("Fercodini Bruno", 20), ("Teresa Volta", 4), ("SCARICO", 18)],
-        "6. Madonna Lame Rid": [("Marchini Gianluigi", 22), ("Gardinazzi Wolmer", 30), ("Pezzali", 20), ("Barbieri Alberto 2", 10), ("SCARICO", 12), ("Marchini Gianluigi", 25), ("Gardinazzi Wolmer", 20), ("SCARICO", 5), ("Fercodini Bruno", 33), ("Fercodini", 10), ("Zanafredi Andrea", 29)],
-        "7. Cividale Nord A": [("Germiniasi Gabriele", 5), ("Cracco Sante", 45), ("Molinari Daniele", 28), ("Manfredi Filippo", 15), ("Poli", 2), ("Dalai Iacopo", 4)],
-        "8. Belvedere Nord": [("Maccagnola", 5), ("Marchini Gianluigi", 10), ("Germiniasi Gabriele", 10), ("Gandolfi F.lli", 3), ("Vicini Giancarlo", 6), ("Zappaterra Attilio", 10), ("Sanguanini", 3)],
-        "9. Belvedere Nord Ridotta": [("Pasin Girolamo", 30), ("Pasetti Angelo", 40), ("F.lli Belletti", 40), ("Zappaterra", 40), ("Gandolfi Mauro", 115), ("Malinverni Davide", 15), ("Sanguanini", 4), ("Taraschi Luigi", 16), ("Belletti F.lli", 150)],
-        "10. Cividale Nord Vecchia Rid": [("Maccagnola Bruno", 50), ("Dalai Iacipo", 30)],
-        "11. Cividale Nord Vecchia": [("Cracco Sante", 6), ("Dalai Iacopo", 13), ("Marchini Gianluigi", 32), ("Maccagnola Bruno", 30)],
-        "12. Cividale Nord Vecchia Pvot": [("Maccagnola Bruno", 50)],
-        "13. Cò De Vanni I°": [("Maccagnola Bruno", 50), ("Scarico", 8)],
-        "14. Cò De Vanni II°": [("Maiocchi", 15), ("Scarico", 2), ("Bernardi Rosolino", 3), ("Arrighi Ettore", 3), ("Casella", 1), ("Scaglioni Antonio", 2), ("Gardani Massimo", 2), ("Morelli Luigi", 5), ("Maiocchi Italo", 13), ("Tolasi", 2), ("Buttarelli Elia", 10), ("Novellini Nicolò", 18), ("Arrighi Ettore 2", 7), ("Scarico", 17), ("Caleffi Manuele", 50), ("Arrighi Ettore 3", 15), ("SCARICO", 15)],
-        "15. Cò De Vanni II° Ridotta": [("Paccini Daniel", 20), ("F.lli Freddi", 15), ("Borroni F.lli", 6), ("Beduschi Guglielmina", 29), ("Arrighi Ettore", 35)],
-        "16. I° Gruppo Bocchette": [("Gandolfi Mauro", 80)],
-        "17. Spineda": [("Scarico", 2), ("Cirelli Luigi", 10), ("Arrighi Ettore", 5), ("Marchini", 8), ("SCARICO", 5)],
-        "18. Spineda Ridotta": [("Pagliari Stefano", 20), ("Maiocchi Italo", 15), ("Arrighi Ettore", 15), ("Belletti F.lli", 20), ("SCARICO", 10), ("Arrighi Ettore", 10), ("Freddi Bruno", 20), ("Ardenghi Luigi", 30), ("Arrighi Ettore", 20), ("Arrighi Ettore", 10), ("Maiocchi Italo", 10), ("Caleffi Silvio", 15), ("Gardani Guido", 15), ("Freddi Bruno", 15), ("SCARICO", 15)],
-        "19. Fornace Rid.": [("Gandolfi Mauro", 10)],
-        "20. S. Fiore I°": [("Novellini Nicolò", 10)],
-        "21. S. Fiore I° Rid": [("Sarzi Maurizio", 20), ("Borroni F.lli", 30), ("Maiocchi", 30), ("Pagliari Stefano", 20), ("Maiocchi Italo 2", 20), ("Borroni F.lli", 35), ("SCARICO", 10), ("Novellini Nicolò", 25), ("Pasini Girolamo", 40), ("Morelli Luigi", 20), ("Marchini Gianluigi", 70), ("SCARICO", 10), ("Maiocchi", 10), ("Freddi Bruno", 10), ("Caleffi Silvio", 20), ("Arrighi Ettore", 10), ("Martelli", 10), ("Marchini Giovanni", 20), ("Torchio Giovanni", 85)],
-        "22. S. FIORE II° LT. 160 piena": [("SCARICO", 20), ("Novellini Nicolò", 10)],
-        "23. S. Fiore II° Rid": [("Maiocchi", 80), ("Novellini Nicolò", 80), ("Ardenghi Umberto", 80)],
-        "24. Cà De Bottoli": [("Paganini Lodovico", 40), ("Paganini Lino", 10), ("Rossi (Eredi)", 10), ("SCARICO", 20), ("Grassi Marcello", 20), ("Monici F.lli", 20)],
-        "25. Secondario Pomara SEZ. LT. 50": [("Verdi Giuseppe", 75), ("Paganni Lodovico", 35), ("Pagliari Stefano", 40), ("Zappaterra Az.Agr.", 80), ("Novellini Nicolò", 70)],
-        "26. Pomara SEZ. LT. 50": [("Noale Giacinto", 35), ("Bislenghi Cesare", 20), ("Cerati", 10), ("SCARICO", 5)],
-        "27. Orti Rid": [("Torchio Mario", 10), ("Maffezzoli Giuliano", 70), ("Dall'Acqua Cesare", 10), ("Verdi Giuseppe", 20), ("Dall'Acqua Gianni", 10), ("Bresciani L.", 30), ("Madella Amadei Elena", 20), ("Adami", 10), ("Pagliari Stefano", 40), ("Borroni F.lli", 20), ("Gobbi Frattini L.", 20), ("SCARICO", 10)],
-        "28. S. Pietro Piena": [("SCARICO", 3), ("Sanfelici Giuseppe", 44), ("Pasetti", 8), ("UTENTE", 3), ("Balzanelli Arturo", 6), ("Neri Giovanni", 3)],
-        "29. S. Pietro Ridotta": [("Vallari (Eredi)", 15), ("Balzanelli Elena", 15), ("Sanfelici Giuseppe", 50), ("Bislenghi Cesare", 10), ("Ferrari Renato", 10), ("Balzanelli Arturo", 10), ("Gobbi Frattini L.", 10), ("Ferrari Mauro", 15), ("Noale Giacinto", 15), ("Paganini", 15), ("Geremia", 15), ("Verdi Giuseppe", 20), ("Morselli Giacomo", 10), ("Borroni", 60)],
-        "30. Ossola": [("Galesi Ettore", 50)],
-        "31. Ossola. II°": [("Agosta Ciro", 20), ("Galesi Ettore", 20), ("Geremia Bruno", 25), ("Pasetti F.lli", 15)],
-        "32. Agraria Rid": [("Monici Giorgio", 20), ("Paglia Giuseppe", 20), ("Cerati Roberto", 10), ("Grassi Marcello", 10), ("Paglia Gianfranco", 20), ("Sarzi A. Selvino", 10), ("Pedrazzoli Ottorino", 25), ("Bislenghi Cesare", 5), ("Pagliari Stefano", 20), ("Scarico", 30), ("Rossi Edo", 10)],
-        "33. Manzoglio": [("Galesi", 30), ("Zardi", 15), ("Scarico", 35), ("Cerati", 40), ("Monici Pierino", 40), ("Galesi Ettore", 80)],
-        "34. Fiescale": [("Caldarini Nazzareno", 30), ("Calza Riccardo", 30), ("Lodi Rizzini E.", 30), ("Mattioli", 30), ("Martelli Enzo", 20), ("Noale Giacinto", 40), ("Rondelli Franco", 40), ("SCARICO", 20), ("Scarico", 30), ("Geremia Bruno", 40), ("Rondelli Elio", 50)],
-        "35. Tessagli Rid": [("Noale Giacinto", 50), ("Calza Riccardo", 40), ("Galesi", 20), ("Rondelli Franco", 20), ("Lodi Rizzini E.", 50), ("Caldarini", 20), ("Rondelli Elio", 50), ("Tenca Giovanni", 20)],
-        "36. Roncole": [("SCARICO", 30), ("Galesi", 30), ("Noale Giacinto", 30), ("Padova Francesco", 20), ("SCARICO", 30), ("Rubini Angelo", 30), ("Maccagnola Bruno", 50), ("Maffezzoli Giuliano", 30), ("Monici Pierino", 20), ("Cerati Mario", 60)],
-        "37. Vaja Rid": [("SCARICO", 40), ("Mattioli", 40), ("Rondelli Elio", 40), ("SCARICO", 40), ("Maffezzoli Giuliano", 30), ("Novellini Flavio", 50)],
-        "38. Riglio -121": [("Paganini Lino", 25), ("Monici Giorgio", 30), ("Cerati Mario", 50), ("Martelli Luigi", 35), ("Pagliari Stefano", 25), ("Pagliari Stefano", 25), ("Rubini Angelo", 40), ("Asinari Matteo", 20), ("Paglia", 30), ("Galesi", 50), ("Paglia Giuseppe", 50), ("SCARICO", 10), ("Silocchi Mauro", 30)],
-        "39. Breda 3° -91": [("Morselli Davide", 12), ("Dalai Iacopo", 3), ("Poli", 22)],
-        "40. Breda 4° -92": [("Maccagnola", 8), ("Germiniasi Gabriele", 5), ("SCARICO", 6)],
-        "41. Delmoncello I°": [("Aporti Andrea", 20), ("Arrighi Ettore", 20), ("Marchini Agr.", 30), ("Bonassi Mauro 1", 20), ("Cracco Sante", 20), ("Bonassi Mauro 2", 20), ("Fercodini Romano", 10), ("Fercodini Massimo", 20), ("Aporti Andrea", 20), ("Mantovani Giulio", 10), ("Maccagnola Bruno", 20)],
-        "42. Delmoncello II°": [("Fercodini Massimo", 3), ("Marchini Gianluigi", 2), ("Morselli Davide", 2), ("Bertoli Erminio", 3)],
-        "43. Casamerlino Rid": [("Maccagnola Bruno", 20)],
-        "44. Bocchette Sec Casalmerlino": [("Alquati", 8), ("Fercodini Massimo", 4), ("Cozzani", 2)],
-        "45. Bocchette sec. casalm.": [("Dalai", 15), ("Fercodini Romano", 15), ("Fazzi", 30), ("Bellini Fabio", 30)]
-    }
-    data_canali = {}
-    for canale, utenti in raw_data.items():
-        if not utenti: 
-            data_canali[canale] = []
-        else:
-            data_canali[canale] = [{"ordine": i+1, "nome": nome, "ore": ore, "coltura": "Da Definire", "note": ""} for i, (nome, ore) in enumerate(utenti)]
-    return data_canali
+    return pd.DataFrame([
+        {"Canale": "Corte Emilia", "Ore": 50.0, "Data_Partenza": "02/05/2026", "Ora_Partenza": "20:00"},
+        {"Canale": "Pirolo", "Ore": 50.0, "Data_Partenza": "04/05/2026", "Ora_Partenza": "22:00"},
+        {"Canale": "Pirolo Rid.", "Ore": 0.0, "Data_Partenza": "07/05/2026", "Ora_Partenza": "00:00"},
+        {"Canale": "Cà Lame", "Ore": 34.0, "Data_Partenza": "07/05/2026", "Ora_Partenza": "00:00"},
+        {"Canale": "Madonna Lame", "Ore": 213.0, "Data_Partenza": "08/05/2026", "Ora_Partenza": "10:00"},
+        {"Canale": "Madonna Lame ridotta", "Ore": 72.0, "Data_Partenza": "22/04/2026", "Ora_Partenza": "07:00"},
+        {"Canale": "Cividale Nord A", "Ore": 99.0, "Data_Partenza": "25/04/2026", "Ora_Partenza": "07:00"},
+        {"Canale": "Belvedere Nord", "Ore": 41.0, "Data_Partenza": "29/04/2026", "Ora_Partenza": "10:00"},
+        {"Canale": "Belvedere Nord rid", "Ore": 150.0, "Data_Partenza": "01/05/2026", "Ora_Partenza": "03:00"},
+        {"Canale": "Cividale Nord vecchia rid.", "Ore": 50.0, "Data_Partenza": "07/05/2026", "Ora_Partenza": "09:00"},
+        {"Canale": "Cividale Nord vecchia", "Ore": 81.0, "Data_Partenza": "14/04/2026", "Ora_Partenza": "11:00"},
+        {"Canale": "Cividale Nord vecchia Rid Pvot", "Ore": 50.0, "Data_Partenza": "21/04/2026", "Ora_Partenza": "00:00"},
+        {"Canale": "Cò de Vanni 1°", "Ore": 58.0, "Data_Partenza": "23/04/2026", "Ora_Partenza": "02:00"},
+        {"Canale": "Cò de Vanni 2°", "Ore": 180.0, "Data_Partenza": "25/04/2026", "Ora_Partenza": "12:00"},
+        {"Canale": "Cò de Vanni 2° Rid.", "Ore": 35.0, "Data_Partenza": "03/05/2026", "Ora_Partenza": "00:00"},
+        {"Canale": "1° Gruppo bocchette", "Ore": 80.0, "Data_Partenza": "04/05/2026", "Ora_Partenza": "11:00"},
+        {"Canale": "Spineda", "Ore": 30.0, "Data_Partenza": "07/05/2026", "Ora_Partenza": "19:00"},
+        {"Canale": "Spineda Rid.", "Ore": 80.0, "Data_Partenza": "14/04/2026", "Ora_Partenza": "01:00"},
+        {"Canale": "Fornace Rid.", "Ore": 10.0, "Data_Partenza": "17/04/2026", "Ora_Partenza": "09:00"},
+        {"Canale": "S.Fiore 1°", "Ore": 10.0, "Data_Partenza": "17/04/2026", "Ora_Partenza": "19:00"},
+        {"Canale": "S.Fiore 1° Rid.", "Ore": 165.0, "Data_Partenza": "18/04/2026", "Ora_Partenza": "05:00"},
+        {"Canale": "S.Fiore 2°.", "Ore": 30.0, "Data_Partenza": "25/04/2026", "Ora_Partenza": "02:00"},
+        {"Canale": "S.Fiore 2° Rid.", "Ore": 80.0, "Data_Partenza": "26/04/2026", "Ora_Partenza": "08:00"},
+        {"Canale": "Cà de Bottoli rid.", "Ore": 40.0, "Data_Partenza": "29/04/2026", "Ora_Partenza": "16:00"},
+        {"Canale": "Sec.Pomara Rid.", "Ore": 150.0, "Data_Partenza": "01/05/2026", "Ora_Partenza": "08:00"},
+        {"Canale": "Pomara Rid.", "Ore": 35.0, "Data_Partenza": "07/05/2026", "Ora_Partenza": "14:00"},
+        {"Canale": "Orti Rid.", "Ore": 90.0, "Data_Partenza": "14/04/2026", "Ora_Partenza": "01:00"},
+        {"Canale": "S.Pietro", "Ore": 67.0, "Data_Partenza": "17/04/2026", "Ora_Partenza": "19:00"},
+        {"Canale": "S.Pietro Rid.", "Ore": 90.0, "Data_Partenza": "20/04/2026", "Ora_Partenza": "14:00"},
+        {"Canale": "Ossola 1° Rid.", "Ore": 50.0, "Data_Partenza": "24/04/2026", "Ora_Partenza": "08:00"},
+        {"Canale": "Ossola 2° Rid.", "Ore": 40.0, "Data_Partenza": "26/04/2026", "Ora_Partenza": "10:00"},
+        {"Canale": "Agraria Rid.", "Ore": 60.0, "Data_Partenza": "28/04/2026", "Ora_Partenza": "02:00"},
+        {"Canale": "Manzoglio Rid.", "Ore": 80.0, "Data_Partenza": "30/04/2026", "Ora_Partenza": "14:00"},
+        {"Canale": "Fiascale Rid.", "Ore": 120.0, "Data_Partenza": "03/05/2026", "Ora_Partenza": "22:00"},
+        {"Canale": "Tessagli Rid.", "Ore": 90.0, "Data_Partenza": "13/04/2026", "Ora_Partenza": "22:00"},
+        {"Canale": "Roncole Rid.", "Ore": 110.0, "Data_Partenza": "17/04/2026", "Ora_Partenza": "16:00"},
+        {"Canale": "Vaja Rid.", "Ore": 80.0, "Data_Partenza": "22/04/2026", "Ora_Partenza": "06:00"},
+        {"Canale": "Riglio Rid.", "Ore": 140.0, "Data_Partenza": "25/04/2026", "Ora_Partenza": "14:00"},
+        {"Canale": "Breda 3°", "Ore": 37.0, "Data_Partenza": "01/05/2026", "Ora_Partenza": "10:00"},
+        {"Canale": "Breda 4°", "Ore": 19.0, "Data_Partenza": "02/05/2026", "Ora_Partenza": "23:00"},
+        {"Canale": "Delmoncello 1° ridotta", "Ore": 70.0, "Data_Partenza": "03/05/2026", "Ora_Partenza": "18:00"},
+        {"Canale": "Delmoncello 2°", "Ore": 10.0, "Data_Partenza": "06/05/2026", "Ora_Partenza": "16:00"},
+        {"Canale": "Casalmerlino ridotta", "Ore": 20.0, "Data_Partenza": "07/05/2026", "Ora_Partenza": "02:00"},
+        {"Canale": "Bocchette Secondario Casalmerlino", "Ore": 14.0, "Data_Partenza": "07/05/2026", "Ora_Partenza": "22:00"},
+        {"Canale": "Bocchette Secondario Casalmerlino rid", "Ore": 30.0, "Data_Partenza": "13/04/2026", "Ora_Partenza": "12:00"},
+        {"Canale": "Bonfanti", "Ore": 300.0, "Data_Partenza": "14/04/2026", "Ora_Partenza": "18:00"},
+        {"Canale": "Levata", "Ore": 300.0, "Data_Partenza": "27/04/2026", "Ora_Partenza": "06:00"},
+    ])
 
-# Inizializzazione Session State
-if 'data_canali' not in st.session_state or len(st.session_state.data_canali) < 40:
-    st.session_state.data_canali = get_initial_data()
-
-if 'stato_canali' not in st.session_state or len(st.session_state.stato_canali) < 40:
-    st.session_state.stato_canali = {
-        canale: {"turno_corrente": 0, "ritardo_minuti": 0, "data_partenza": datetime(2027, 5, 3, 20, 0, 0)}
-        for canale in st.session_state.data_canali.keys()
-    }
-
+if 'df_canali' not in st.session_state:
+    st.session_state.df_canali = get_initial_data()
 if 'data_selezionata' not in st.session_state:
     st.session_state.data_selezionata = datetime.now().date()
 
-# =========================================================
-# HEADER E SELETTORE CANALE
-# =========================================================
-st.markdown("<h1 style='text-align: center; color: #1D3557;'>💧 Gestione Integrata Canalette</h1>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center; color: #457B9D;'>Consorzio di Bonifica Navarolo - Agro Cremonese Mantovano</p>", unsafe_allow_html=True)
+with st.expander("⚙️ Impostazioni Stagione", expanded=False):
+    d_inizio = st.date_input("Inizio Stagione:", datetime(2026, 4, 1).date(), format="DD/MM/YYYY")
+    t_inizio = st.time_input("Ora Inizio:", datetime(2026, 4, 1, 8, 0).time())
+    d_fine = st.date_input("Fine Stagione:", datetime(2026, 9, 22).date(), format="DD/MM/YYYY")
+    ciclo_giorni = st.number_input("Ogni quanti giorni riparte il ciclo?", min_value=1, value=14)
+    if st.button("♻️ Reset Tabella Partenze"):
+        st.session_state.df_canali = get_initial_data()
+        st.rerun()
 
-lista_canali = list(st.session_state.data_canali.keys())
+end_stagione = datetime.combine(d_fine, datetime.max.time())
 
-col_sel1, col_sel2 = st.columns([3, 1])
-with col_sel1:
-    canale_selezionato = st.selectbox("Seleziona la Canaletta su cui operare:", lista_canali)
+with st.expander("📝 Modifica Partenze e Durate", expanded=False):
+    edited_df = st.data_editor(
+        st.session_state.df_canali,
+        num_rows="dynamic", use_container_width=True, hide_index=True,
+        column_config={
+            "Canale": st.column_config.TextColumn("Canale", required=True),
+            "Ore": st.column_config.NumberColumn("Ore", required=True),
+            "Data_Partenza": st.column_config.TextColumn("Data Prima Partenza", help="GG/MM/AAAA", required=True),
+            "Ora_Partenza": st.column_config.TextColumn("Ora Prima Partenza", help="HH:MM", required=True),
+        }
+    )
+    st.session_state.df_canali = edited_df
 
-stato_canale = st.session_state.stato_canali[canale_selezionato]
-utenti_canale = st.session_state.data_canali[canale_selezionato]
+@st.cache_data
+def calcola_turni_da_partenze(df_canali, fine_stagione, giorni_ciclo):
+    turni = []
+    df_valid = df_canali.dropna().copy()
+    for _, row in df_valid.iterrows():
+        try:
+            start_dt = datetime.strptime(f"{row['Data_Partenza']} {row['Ora_Partenza']}", "%d/%m/%Y %H:%M")
+            durata_ore = float(row['Ore'])
+            if durata_ore <= 0: continue
+            
+            inizio_ciclo_canale = start_dt
+            while inizio_ciclo_canale < fine_stagione:
+                fine_turno = inizio_ciclo_canale + timedelta(hours=durata_ore)
+                turni.append({"Canale": row['Canale'], "Inizio": inizio_ciclo_canale, "Fine": fine_turno})
+                inizio_ciclo_canale += timedelta(days=giorni_ciclo)
+        except:
+            continue
+    return pd.DataFrame(turni)
 
-with col_sel2:
-    st.metric("Utenti Registrati", f"{len(utenti_canale)} / 100 max")
+df_risultato = calcola_turni_da_partenze(st.session_state.df_canali, end_stagione, ciclo_giorni)
 
-st.write("---")
+st.markdown("---")
+if not df_risultato.empty:
+    st.subheader("📅 Programma del Giorno")
 
-# =========================================================
-# SCHEDE OPERATIVE (TABS)
-# =========================================================
-tab_turni, tab_censimento, tab_anagrafica = st.tabs([
-    "💧 Gestione Turni (Estivo)",
-    "🌾 Censimento Invernale",
-    "👥 Gestione Anagrafica"
-])
-
-# ---------------------------------------------------------
-# TAB 1: GESTIONE TURNI (ESTIVO)
-# ---------------------------------------------------------
-with tab_turni:
-    st.subheader(f"Operatività: {canale_selezionato}")
-
-    # Calcolo sequenziale a cascata
-    turni_calcolati = []
-    orario_progressivo = stato_canale["data_partenza"]
-
-    for i, u in enumerate(utenti_canale):
-        inizio_nominale = orario_progressivo
-        inizio_effettivo = inizio_nominale
-        if i >= stato_canale["turno_corrente"]:
-            inizio_effettivo += timedelta(minutes=stato_canale["ritardo_minuti"])
-        fine_effettiva = inizio_effettivo + timedelta(hours=u["ore"])
-        turni_calcolati.append({
-            "ordine": u["ordine"], "nome": u["nome"], "inizio": inizio_effettivo,
-            "fine": fine_effettiva, "durata": u["ore"]
-        })
-        orario_progressivo = inizio_nominale + timedelta(hours=u["ore"])
-
-    # Pulsanti di Navigazione Rapida
     col_ieri, col_oggi, col_domani = st.columns(3)
     with col_ieri:
         if st.button("⬅️ IERI", use_container_width=True):
@@ -179,119 +149,43 @@ with tab_turni:
             st.session_state.data_selezionata += timedelta(days=1)
             st.rerun()
 
-    # Visualizzazione Turno Attivo
-    idx = stato_canale["turno_corrente"]
-    if len(turni_calcolati) > 0 and idx < len(turni_calcolati):
-        t_attivo = turni_calcolati[idx]
-        
-        ora_in = formatta_data_it(t_attivo['inizio'])
-        ora_fi = formatta_data_it(t_attivo['fine'])
-        
-        pallino_verde = '<span style="display:inline-block; width:15px; height:15px; background-color:#00FF00; border-radius:50%; border:2px solid #005000; margin-right:8px; vertical-align:middle; box-shadow: 0px 0px 4px #00FF00;"></span>'
-        pallino_rosso = '<span style="display:inline-block; width:15px; height:15px; background-color:#FF0000; border-radius:50%; border:2px solid #500000; margin-right:8px; vertical-align:middle; box-shadow: 0px 0px 4px #FF0000;"></span>'
+    giorno_selezionato = st.date_input("Data:", value=st.session_state.data_selezionata, format="DD/MM/YYYY", label_visibility="collapsed")
+    if giorno_selezionato != st.session_state.data_selezionata:
+        st.session_state.data_selezionata = giorno_selezionato
+        st.rerun()
 
-        st.markdown(f"""
-        <div style="background-color: #E6F3FF; padding: 18px; border-radius: 12px; border-left: 8px solid #1D3557; margin-bottom: 15px;">
-            <span style="color: #457B9D; font-weight: bold; font-size: 12px; text-transform: uppercase;">🔴 TURNO ATTUALE IN CORSO</span>
-            <h2 style="margin: 4px 0; color: #1D3557;">{t_attivo['nome']}</h2>
-            <p style="margin: 5px 0; font-size: 15px; color: #1D3557; display: flex; align-items: center;">
-                {pallino_verde} <span style="vertical-align: middle;">Inizio presa: {ora_in}</span>
-            </p>
-            <p style="margin: 5px 0; font-size: 15px; color: #E63946; display: flex; align-items: center;">
-                {pallino_rosso} <span style="vertical-align: middle;">Fine stimata: {ora_fi} ({t_attivo['durata']} ore)</span>
-            </p>
-        </div>
-        """, unsafe_allow_html=True)
+    inizio_giorno = datetime.combine(st.session_state.data_selezionata, datetime.min.time())
+    fine_giorno = inizio_giorno + timedelta(days=1)
 
-        if idx + 1 < len(turni_calcolati):
-            t_succ = turni_calcolati[idx + 1]
+    turni_del_giorno = df_risultato[
+        (df_risultato['Inizio'] < fine_giorno) & (df_risultato['Fine'] > inizio_giorno)
+    ].sort_values(by='Inizio')
+
+    if turni_del_giorno.empty:
+        st.success(f"✅ Nessun canale in funzione il {st.session_state.data_selezionata.strftime('%d/%m/%Y')}.")
+    else:
+        for _, turno in turni_del_giorno.iterrows():
+            ora_in = formatta_data_it(turno['Inizio'])
+            ora_fi = formatta_data_it(turno['Fine'])
+            
+            p_verde = '<span style="display:inline-block; width:14px; height:14px; background-color:#00FF00; border-radius:50%; border:2px solid #005000; margin-right:8px; vertical-align:middle; box-shadow: 0px 0px 4px #00FF00;"></span>'
+            p_rosso = '<span style="display:inline-block; width:14px; height:14px; background-color:#FF0000; border-radius:50%; border:2px solid #500000; margin-right:8px; vertical-align:middle; box-shadow: 0px 0px 4px #FF0000;"></span>'
+            
             st.markdown(f"""
-            <div style="background-color: #F1FAEE; padding: 12px; border-radius: 10px; border-left: 5px solid #2A9D8F; margin-bottom: 20px;">
-                <span style="color: #2A9D8F; font-weight: bold; font-size: 11px;">⏭️ PROSSIMO IN CODA:</span>
-                <h4 style="margin: 2px 0; color: #1D3557;">{t_succ['nome']} ({t_succ['durata']} ore)</h4>
-                <p style="margin: 0; font-size: 13px; color: #1D3557;">Inizio previsto: <b>{formatta_data_it(t_succ['inizio'])}</b></p>
+            <div style="border-left: 8px solid #1f77b4; background-color: #f0f2f6; padding: 12px; margin-bottom: 8px; border-radius: 5px;">
+                <h3 style="margin: 0 0 10px 0; color: #111; font-weight: bold; font-size: 1.25em;">{turno['Canale']}</h3>
+                <p style="font-size: 1.1em; margin: 0 0 6px 0; display: flex; align-items: center;">
+                    {p_verde} <span><b>Apertura:</b> {ora_in}</span>
+                </p>
+                <p style="font-size: 1.1em; margin: 0; display: flex; align-items: center;">
+                    {p_rosso} <span><b>Chiusura:</b> {ora_fi}</span>
+                </p>
             </div>
             """, unsafe_allow_html=True)
-        else:
-            st.info("Questo è l'ultimo consorziato della sequenza.")
 
-        st.write("#### ⚙️ Azioni Rapide Acquaiolo")
-        btn_c1, btn_c2 = st.columns(2)
-        with btn_c1:
-            if st.button("✅ Turno Concluso / Passa al Successivo", use_container_width=True):
-                if stato_canale["turno_corrente"] + 1 < len(utenti_canale):
-                    stato_canale["turno_corrente"] += 1
-                    st.rerun()
-                else:
-                    st.success("Tutti i turni della canaletta sono completati!")
-        with btn_c2:
-            if st.button("🔄 Ripristina Primo Turno", use_container_width=True):
-                stato_canale["turno_corrente"] = 0
-                stato_canale["ritardo_minuti"] = 0
-                st.rerun()
-
-        st.write("---")
-        st.write("⚠️ **Segnalazione Ritardo sul Campo** (ricalcola all'istante i turni successivi):")
-        r_c1, r_c2, r_c3, r_c4 = st.columns(4)
-        with r_c1:
-            if st.button("+15 Minuti", use_container_width=True):
-                stato_canale["ritardo_minuti"] += 15
-                st.rerun()
-        with r_c2:
-            if st.button("+30 Minuti", use_container_width=True):
-                stato_canale["ritardo_minuti"] += 30
-                st.rerun()
-        with r_c3:
-            if st.button("+1 Ora", use_container_width=True):
-                stato_canale["ritardo_minuti"] += 60
-                st.rerun()
-        with r_c4:
-            if st.button("Azzera Ritardi", use_container_width=True):
-                stato_canale["ritardo_minuti"] = 0
-                st.rerun()
-
-        if stato_canale["ritardo_minuti"] > 0:
-            st.warning(f"⚠️ Ritardo cumulativo attivo su questo canale: **{stato_canale['ritardo_minuti']} minuti**.")
-    else:
-        st.info("Nessun utente inserito in questa canaletta. Aggiungine uno nella scheda 'Gestione Anagrafica'.")
-
-    if len(turni_calcolati) > 0:
-        st.write("---")
-        st.write("### 📅 Tabella Orari Completa (Vista Ufficio)")
-        df_t = pd.DataFrame(turni_calcolati)
-        df_t["Inizio Previsto"] = df_t["inizio"].dt.strftime('%d/%m/%Y %H:%M')
-        df_t["Fine Prevista"] = df_t["fine"].dt.strftime('%d/%m/%Y %H:%M')
-        df_t["Ore"] = df_t["durata"]
-        st.dataframe(df_t[["ordine", "nome", "Inizio Previsto", "Fine Prevista", "Ore"]], use_container_width=True)
-
-# ---------------------------------------------------------
-# TAB 2: CENSIMENTO INVERNALE (COLTURE & ORE)
-# ---------------------------------------------------------
-with tab_censimento:
-    st.subheader(f"🌾 Censimento Fabbisogno Invernale: {canale_selezionato}")
-    st.write("Compila le ore richieste e la coltura durante le visite invernali ai consorziati.")
-
-    if len(utenti_canale) == 0:
-        st.info("Nessun utente da censire in questo canale.")
-    else:
-        for idx_u, u in enumerate(utenti_canale):
-            with st.expander(f"{u['ordine']}. {u['nome']} - Attuali: {u['ore']} ore ({u['coltura']})"):
-                with st.form(f"form_censimento_{canale_selezionato}_{idx_u}"):
-                    c_col1, c_col2 = st.columns(2)
-                    with c_col1:
-                        nuove_ore = st.number_input(
-                            "Ore Richieste per la Nuova Stagione:",
-                            min_value=0, max_value=200, value=int(u["ore"])
-                        )
-                    with c_col2:
-                        colture_opzioni = ["Mais", "Pomodoro", "Erba Medica", "Soia", "Riso", "Ortaggi", "Da Definire", "Altro", "Scarico"]
-                        idx_c = colture_opzioni.index(u["coltura"]) if u["coltura"] in colture_opzioni else 0
-                        nuova_coltura = st.selectbox("Coltura Prevista:", colture_opzioni, index=idx_c)
-                    
-                    nuove_note = st.text_area("Note / Modifiche Terreno (opzionale):", value=u.get("note", ""))
-                    
-                    if st.form_submit_button("💾 Salva Dati Censimento", use_container_width=True):
-                        st.session_state.data_canali[canale_selezionato][idx_u]["ore"] = nuove_ore
-                        st.session_state.data_canali[canale_selezionato][idx_u]["coltura"] = nuova_coltura
-                        st.session_state.data_canali[canale_selezionato][idx_u]["note"] = nuove_note
-             
+    with st.expander("📥 Scarica Tabellone Stagionale (CSV)"):
+        st.dataframe(df_risultato.style.format({"Inizio": "{:%d/%m/%Y %H:%M}", "Fine": "{:%d/%m/%Y %H:%M}"}), hide_index=True)
+        csv = df_risultato.to_csv(index=False, date_format='%d/%m/%Y %H:%M').encode('utf-8')
+        st.download_button("Scarica CSV", data=csv, file_name="orari_stagione.csv", mime="text/csv")
+else:
+    st.warning("Nessun dato da calcolare. Controlla la tabella delle partenze.")
